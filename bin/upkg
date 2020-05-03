@@ -1,0 +1,193 @@
+#! /bin/sh
+#-----------------------------------------------------------------------------
+#   upkg			- Micro package manager
+#
+#   Copyright (C) 2013-2017 Das Computerlabor
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+##
+##  AUTHOR(S):	ks	Karl Schmitz <carolus.faber@gmail.com>
+##
+##  WRITTEN BY:	ks	2013-10-30
+##  CHANGED BY:	ks	2017-01-07	Use
+##					  * cpio(1) instead of tar(1)
+##					    for archiving and
+##					  * bzip2(1) instead of gzip(1)
+##					    for compression.
+##					Don't forget to remove symlinks
+##					pointing to directories.
+##					Don't remove pathnames listed in
+##					'$HOME/.upkgkeep'.
+##----------------------------------------------------------------------------
+##  upkg_atload(LIB)		Library load-time hook
+#-----------------------------------------------------------------------------
+upkg_atload() {
+    case $1 in				## Which library was just loaded?
+	safe)				## libsafe-sh...
+	    safe_init :0		## Define cleanup tag.
+	    ;;
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  upkg_help([ACTION])	Show help (for ACTION)
+##----------------------------------------------------------------------------
+upkg_help() {
+    local suffix=`echo "${1+_$*}" | sed 'y/ /_/'`
+
+    case :$suffixes: in
+	*:${suffix}:*)	;;
+	*)  suffix=	;;
+    esac
+
+    case $suffix in
+	_help)		cat <<EOF
+Usage: $command $* [ACTION]
+	Show help (for ACTION).
+EOF
+	    ;;
+	_version)	cat <<EOF
+Usage: $command $*
+	Show version information.
+EOF
+	    ;;
+	_build)		cat <<EOF
+Usage: $command $*
+	Build micro package.
+EOF
+	    ;;
+	_list)		cat <<EOF
+Usage: $command $* [UPKG]
+	List micro package contents.
+EOF
+	    ;;
+	_install)	cat <<EOF
+Usage: $command $*
+	Self-install micro package.
+EOF
+	    ;;
+	_remove)	cat <<EOF
+Usage: $command $*
+	Self-remove micro package.
+EOF
+	    ;;
+	*)		cat <<EOF
+Usage: $command ACTION [ARGUMENT ...]
+
+Possible actions are:`echo ":-:$suffixes" | sed 's/:-:/\n  */g;y/_:/ ,/'`
+Try $QB$command help ACTION$QE for details.
+EOF
+	    return
+	    ;;
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  upkg_version()		Show version information
+##----------------------------------------------------------------------------
+upkg_version() {
+    cat <<EOF
+upkg (Micro package manager) 0.2
+Please send bug reports to <carolus.faber@gmail.com>.
+EOF
+}
+
+##----------------------------------------------------------------------------
+##  upkg_build()		Build micro package
+##----------------------------------------------------------------------------
+upkg_build() {
+    local destdir cwd=`pwd` package
+
+    dl_load safe			## Load prerequisite libraries.
+    case $# in
+	0)  package=`basename "$cwd"`	;;
+	1)  package=$1			;;
+    esac
+
+    safe_mktmpdir destdir && make DESTDIR="$destdir" install || return 1
+    (cd "$destdir" && find * | sort -u | cpio -ov) | bzip2 -z9 |
+	 base64 | cat "$0" - >$package.upkg && chmod +x "$package".upkg
+}
+
+##----------------------------------------------------------------------------
+##  upkg_list()			List micro package contents
+##----------------------------------------------------------------------------
+upkg_list() {
+    sed '1,/^exit \$?$/d' "${1-$0}" | base64 -d | bzip2 -d | cpio -t
+}
+
+##----------------------------------------------------------------------------
+##  upkg_install()		Self-install micro package
+##----------------------------------------------------------------------------
+upkg_install() {
+    sed '1,/^exit \$?$/d' "${1-$0}" | base64 -d | bzip2 -d |
+	(cd / && cpio -ivdmu)
+}
+
+##----------------------------------------------------------------------------
+##  upkg_remove()		Self-remove micro package
+##----------------------------------------------------------------------------
+upkg_remove() {
+    local pn
+
+    upkg_list ${1+"$@"} 2>/dev/null | sort -ru | while read pn; do
+	fgrep -qxe "/$pn" "$HOME"/.upkgkeep || if test -h "/$pn"; then
+	    echo rm -f "/$pn"; rm -f "/$pn"
+	elif test -d "/$pn"; then
+	    echo rmdir "/$pn"; rmdir "/$pn"
+	else
+	    echo rm -f "/$pn"; rm -f "/$pn"
+	fi
+    done 2>/dev/null
+}
+
+##----------------------------------------------------------------------------
+##  Main program:
+##----------------------------------------------------------------------------
+LC_ALL=C; export LC_ALL			## Avoid locale insanities.
+command=`basename "$0"`			## Determine command name.
+case $#:$command in
+    0:?*.upkg)
+	exec "$0" install
+	;;
+    *:?*.upkg)
+	suffixes=_help:_version:_list:_install:_remove
+	;;
+    *)
+	eval "`libdl-sh load`" && dl_atload upkg_atload
+	suffixes=_help:_version:_build:_list
+	;;
+esac
+
+suffix=
+while test $# -gt 0; do			## Extend suffix...
+    suffix=${suffix}_$1; shift
+    case :$suffixes: in
+	*:${suffix}_*)	;;
+	*)  break	;;
+    esac
+done
+
+case :$suffixes: in			## Extended suffix recognized?
+    *:${suffix}:*)			## Yes, derive action,
+	action=`echo "$suffix" | sed 's/^_//;y/_/ /'`
+	upkg$suffix ${1+"$@"}
+					## register load-time hook,
+	;;				## and perform action.
+    *)	upkg_help			## No, show general help and
+	exit 2				## indicate usage error.
+	;;
+esac
+exit $?

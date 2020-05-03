@@ -1,0 +1,716 @@
+#! /bin/sh -e
+#-----------------------------------------------------------------------------
+#   stowpkg			- Build and manage self-deploying
+#				  stowable packages
+#
+#   Copyright © 2020 Das Computerlabor (DCl-M)
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+##
+##  AUTHOR(S):	ks	Karl Schmitz <carolus.faber@gmail.com>
+##
+##  WRITTEN BY:	ks	2020-05-03
+##  CHANGED BY:
+##----------------------------------------------------------------------------
+##  Initialization:
+#-----------------------------------------------------------------------------
+LC_ALL=C; export LC_ALL			## Avoid locale insanities.
+command=`basename "$0"`			## Determine command name.
+#-vvvv--8><-vvvv-#
+snip_head='#-vvvv--8><-vvvv-#'		## Define snip head and tail.
+snip_tail='#-^^^^--8><-^^^^-#'
+#-^^^^--8><-^^^^-#
+info_head='#-vvvv-INFO-vvvv-#'		## Define info and data section heads.
+data_head='#-vvvv-DATA-vvvv-#'
+readonly snip_head snip_tail info_head data_head
+
+unset GETOPT_COMPATIBLE			## Make getopt(1) behave.
+unset GREP_OPTIONS GREP_COLOR GREP_COLORS
+					## Make the grep(1)s behave.
+
+unset TRACE compression; verbose=n archiver=cpio compressor=xz encoder=base64
+target=@prefix@; stowdir=@stowdir@	## Provide sane defaults.
+
+#-vvvv--8><-vvvv-#
+##----------------------------------------------------------------------------
+##  stowpkg_atload(LIB)		Library load-time hook
+##----------------------------------------------------------------------------
+stowpkg_atload() {
+    case $1 in				## Which library was just loaded?
+	safe)				## libsafe.sh...
+	    safe_init :0		## Define cleanup tag.
+	    ;;
+    esac
+}
+
+#-^^^^--8><-^^^^-#
+##----------------------------------------------------------------------------
+##  stowpkg_program(PROGRAM [&CATEGORY])
+##				Ascertain that PROGRAM is present
+##
+##  Non-local variables:
+##	- &CATEGORY	(W) Name of program in CATEGORY
+##----------------------------------------------------------------------------
+stowpkg_program() {
+    case ${1:+=} in			## PROGRAM passed?
+	=)  local program="`command -v "$1"`" || {
+					## Yes, is it present?
+		echo "$command: Missing ${2-program} $1!" >&2
+		return 1		## No, complain and indicate failure!
+	    }
+	    case ${2-program} in	## Is it supposed to be an archiver/
+					## compressor/encoder?
+		archiver|compressor|encoder)
+		    eval "$2"'=$program'
+		    ;;			## Yes, update corresponding variable.
+	    esac
+	    ;;
+	*)  return 2			## No, indicate usage error!
+	    ;;
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_programs(PROGRAM ...)
+##				Ascertain that all PROGRAMs are present
+##----------------------------------------------------------------------------
+stowpkg_programs() {
+    local status=0 program; for program in ${1+"$@"}; do
+	stowpkg_program "$program" || status=1
+    done; return $status
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_decode([MODE])	~~~~
+##
+##  Non-local variables:
+##	- encoder	(W) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_decode() {
+    case ${encoder:=unknown}${1+:$1} in
+	*/base64:supported)
+	    return 0
+	    ;;
+	*:supported)
+	    echo "$command: Encoder $encoder not supported!" >&2
+	    return 1
+	    ;;
+	*/base64)
+	    "$encoder" -d
+	    ;;
+	*)  cat
+	    ;;
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_inflate([MODE])	~~~~
+##
+##  Non-local variables:
+##	- compressor	(W) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_inflate() {
+    case ${compressor:=unknown}${1+:$1} in
+	*/bzip2:supported|*/xz:supported|*/lz[io]p:supported|		\
+	*/lzma:supported|*/gzip:supported|*/compress:supported)
+	    return 0
+	    ;;
+	*:supported)
+	    echo "$command: Compressor $compressor not supported!" >&2
+	    return 1
+	    ;;
+	*/bzip2|*/xz|*/lz[io]p|*/lzma|*/gzip|*/compress)
+	    "$compressor" -dc
+	    ;;
+	*)  cat
+	    ;;
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_extract([MODE])	~~~~
+##
+##  Non-local variables:
+##	- archiver	(W) ~~~~
+##	- verbose	(R) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_extract() {
+    local v=
+    case ${verbose:-n} in
+	y)  v=v	;;
+    esac; case ${archiver:=unknown}${1+:$1} in
+	*/cpio:supported|*/tar:supported)
+	    return 0
+	    ;;
+	*:supported)
+	    echo "$command: Archiver $archiver not supported!" >&2
+	    return 1
+	    ;;
+	*/cpio:list)
+	    "$archiver" -t$v
+	    ;;
+	*/cpio)
+	    "$archiver" -i${v}dmu --no-preserve-owner
+	    ;;
+	*/tar:list)
+	    "$archiver" -t${v}f -
+	    ;;
+	*/tar)
+	    "$archiver" -x${v}f - --no-same-owner
+	    ;;
+	*)  cat >/dev/null
+	    ;;
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_verify(STOWABLE)	Ascertain that STOWABLE contains a stowable
+##				package
+##
+##  Non-local variables:
+##	- info_head	(R) ~~~~
+##	- data_head	(R) ~~~~
+##	- target	(W) ~~~~
+##	- archiver	(W) ~~~~
+##	- compressor	(W) ~~~~
+##	- encoder	(W) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_verify() {
+    stowpkg_programs sed || return $?	## Bail out unless sed(1) is present.
+
+    local info; unset target archiver compressor encoder
+					## Drop target/archiver/compressor/
+					## encoder presets.
+    eval "`sed '
+	1,/^'"$info_head"'$/d;/^'"$data_head"'$/,$d
+	/^target=/bp
+	/^archiver=/bp
+	/^compressor=/bp
+	/^encoder=/bp
+	d;:p
+    ' "${1:--}"`" || {			## sed(1) succeeded in extracting the
+					## INFO section?
+	echo "${1:--}: No such stowable package!" >&2
+	return 1			## No, complain and indicate failure!
+    }
+
+    for info in target archiver compressor encoder; do
+	eval 'case ${'"$info"':+=} in	## Foreach required package info do...
+	    =)		;;		## INFO section has it?
+	    *)	test	;;		## No, assume failure.
+	esac'
+    done || {				## All required infos extracted?
+	echo "${1:--}: Not a stowable package!" >&2
+	return 1			## No, complain and indicate failure!
+    }
+
+    stowpkg_program "$archiver" archiver &&
+	stowpkg_program "$compressor" compressor &&
+	stowpkg_program "$encoder" encoder &&
+	stowpkg_extract supported &&	## Ascertain that required archiver,
+	stowpkg_inflate supported &&	## compressor, and encoder are present
+	stowpkg_decode supported	## and supported.
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_revokable([STOWABLE])
+##				Stowable package may be revoked from
+##				stow directory?
+##
+##  Non-local variables:
+##	- stowdir	(R) ~~~~
+##	- target	(R) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_revokable() {
+    local sppn="${1:-$0}" spbn spsn ifs lpn rpn nl='
+'
+    spbn=${sppn##*/}; spsn=${spbn%.stow}
+    ifs=$IFS; IFS=$nl; set shiftee `
+	find "$target" -type l | sort -u
+    `; shift; IFS=$ifs; for lpn in ${1+"$@"}; do
+	rpn=`readlink -e "$lpn"` && case $rpn in
+	    $stowdir/$spsn/*)
+		echo "$command: Stow package $spsn is still installed!" >&2
+		return 1
+		;;
+	esac
+    done; return 0
+}
+
+#-vvvv--8><-vvvv-#
+##----------------------------------------------------------------------------
+##  stowpkg_archive([MODE])	~~~~
+##
+##  Non-local variables:
+##	- archiver	(W) ~~~~
+##	- verbose	(R) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_archive() {
+    local v=
+    case ${verbose:-n} in
+	y)  v=v	;;
+    esac; case ${archiver:=unknown}${1+:$1} in
+	*/cpio:supported|*/tar:supported)
+	    return 0
+	    ;;
+	*:supported)
+	    echo "$command: Archiver $archiver not supported!" >&2
+	    return 1
+	    ;;
+	*/cpio)
+	    cpio -o$v
+	    ;;
+	*/tar)
+	    tar --no-recursion --verbatim-files-from -T - -c${v}f -
+	    ;;
+	*)  cat >/dev/null		## Consume pathname list, leaving
+	    ;;				## stdin at EOF.
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_deflate([MODE])	~~~~
+##
+##  Non-local variables:
+##	- compressor	(W) ~~~~
+##	- compression	(R) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_deflate() {
+    case ${compressor:=unknown}${1+:$1} in
+	*/bzip2:supported|*/xz:supported|*/lz[io]p:supported|		\
+	*/lzma:supported|*/gzip:supported|*/compress:supported)
+	    return 0
+	    ;;
+	*:supported)
+	    echo "$command: Compressor $compressor not supported!" >&2
+	    return 1
+	    ;;
+	*/bzip2|*/xz|*/lz[io]p|*/lzma|*/gzip|*/compress)
+	    "$compressor" -z${compression-}
+	    ;;
+	*)  cat
+	    ;;
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_encode([MODE])	~~~~
+##
+##  Non-local variables:
+##	- encoder	(W) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_encode() {
+    case ${encoder:=unknown}${1+:$1} in
+	*/base64:supported)
+	    return 0
+	    ;;
+	*:supported)
+	    echo "$command: Encoder $encoder not supported!" >&2
+	    return 1
+	    ;;
+	*/base64)
+	    "$encoder"
+	    ;;
+	*)  cat
+	    ;;
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_getvars(MAKEFILE [&NAME ...])
+##				~~~~
+##----------------------------------------------------------------------------
+stowpkg_getvars() {
+    local mfpn="$1" sx n; shift		## Fetch Makefile's pathname.
+
+    case ${1+=} in
+	=)  sx='y/	/ /;s/   */ /g;s/^ //;s/ $//'
+	    for n in "$@"; do
+		expr "_$n" : "_$dl_re_ident$DS" >/dev/null &&
+		    sx="$sx$NL"'/^\('"$n"'\) *= */bp'
+	    done
+	    sx="$sx$NL"'d;:p'"$NL"'s//\1=/;s/'"$SQ"'/&'"$BS$BS"'&&/g'
+	    sx="$sx"';s/'"$SQ"'/&'"$BS$BS"'&&/g;s/=/&'"$SQ"'/;s/$/'"$SQ"'/'
+	    sed "$sx" "$mfpn"
+	    ;;
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_build([PACKAGE [VERSION]])
+##				Build stowable package
+##
+##  Non-local variables:
+##	- snip_head	(R) ~~~~
+##	- snip_tail	(R) ~~~~
+##	- info_head	(R) ~~~~
+##	- data_head	(R) ~~~~
+##	- target	(R) ~~~~
+##	- archiver	(W) ~~~~
+##	- compressor	(W) ~~~~
+##	- encoder	(W) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_build() {
+    stowpkg_programs mktemp sed make &&
+	stowpkg_program "$archiver" archiver &&
+	stowpkg_program "$compressor" compressor &&
+	stowpkg_program "$encoder" encoder &&
+	stowpkg_archive supported &&
+	stowpkg_deflate supported &&
+	stowpkg_encode supported || return $?
+					## Check prerequisites as well as ar-
+					## chiver/compressor/encoder avail-
+					## ability and supportedness.
+    test -f configure && test -x configure || {
+	echo "$command: No configure script found!" >&2
+	return 1			## Complain and abort unless configure
+    }					## script exists.
+
+    echo "$command: Prepare source..."
+    local srcdir="`pwd`" tmpdir builddir destdir package version	\
+	  PACKAGE_TARNAME PACKAGE_VERSION PACKAGE VERSION spsn spbn
+
+    dl_load safe && safe_mktmpdir tmpdir &&
+	safe_mktmpdir builddir _build && safe_mktmpdir destdir _dest &&
+    if test -f config.status; then
+	mv config.status "$tmpdir" &&
+	    undo_push :0 mv "$tmpdir"/config.status "$srcdir"
+    else
+	undo_push 'rm -f' "$srcdir"/config.status
+    fi || {
+	echo "$command: Couldn${SQ}t prepare source for building!" >&2
+	return 1
+    }
+
+    echo "$command: Configure source..."
+    (cd "$builddir" && "$srcdir"/configure --prefix="$target") || {
+	echo "$command: Couldn${SQ}t configure source!" >&2
+	return 1
+    }
+
+    case ${1:+1}${2:+2} in
+	1*) package=$1 version=${2-}
+	    ;;
+	*)  eval "`
+		stowpkg_getvars "$builddir"/Makefile			\
+		    PACKAGE_TARNAME PACKAGE_VERSION PACKAGE VERSION
+	    `"
+	    package=${PACKAGE_TARNAME-${PACKAGE-`basename "$srcdir"`}}
+	    version=${PACKAGE_VERSION-${VERSION-}}
+	    ;;
+    esac; spsn=$package${version:+_$version}; spbn=$spsn.stow
+
+    echo "$command: Build $spsn..."
+    (cd "$builddir" && make) || {
+	echo "$command: Couldn${SQ}t build $spsn!" >&2
+	return 1
+    }
+
+    echo "$command: Install $spsn..."
+    (cd "$builddir" && make DESTDIR="$destdir" prefix="/$spsn" install) || {
+	echo "$command: Couldn${SQ}t install $spsn!" >&2
+	return 1
+    }
+
+    echo "$command: Assemble $spbn..."
+    undo_push 'rm -f' "$spbn"
+    (cd "$destdir" && find "$spsn" | sort -u | stowpkg_archive) |
+	stowpkg_deflate | stowpkg_encode | sed '
+/^readonly /s/snip_[^ ]* //g;/suffixes=/s/_build://g
+/^'"$snip_head"'$/,/^'"$snip_tail"'$/d;/^'"$info_head"'$/a\
+encoder='"`   quote_sh "${encoder##*/}"   `"'\
+compressor='"`quote_sh "${compressor##*/}"`"'\
+archiver='"`  quote_sh "${archiver##*/}"  `"'\
+target='"`    quote_sh "$target"	  `"'\
+'"$data_head$NL" "$0" - >$spbn	&& test -s "$spbn" && chmod +x "$spbn"
+}
+
+#-^^^^--8><-^^^^-#
+##----------------------------------------------------------------------------
+##  stowpkg_info([STOWABLE])	(Self-)show stowable package information
+##----------------------------------------------------------------------------
+stowpkg_info() {
+    stowpkg_programs sed || return 1
+    sed '1,/^'"$info_head"'$/d;/^'"$data_head"'$/,$d' "${1:-$0}" || {
+	echo "${1:-$0}: Not a stowable package!" >&2
+	return 1			## Dump INFO section to stdout.
+    }
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_list([STOWABLE])	(Self-)list stowable package contents
+##----------------------------------------------------------------------------
+stowpkg_list() {
+    stowpkg_verify "${1:-$0}" && sed '1,/^'"$data_head"'$/d' "${1:-$0}" |
+	stowpkg_decode | stowpkg_inflate | stowpkg_extract list
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_deploy([STOWABLE])	(Self-)deploy stowable package into stow dir.
+##
+##  Non-local variables:
+##	- stowdir	(R) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_deploy() {
+    case ${stowdir:+=} in
+	=)  test -d "$stowdir" || {
+		echo "$stowdir: No such directory!" >&2
+		return 1
+	    }
+	    ;;
+	*)  echo "$command: No stow directory given!" >&2
+	    return 1
+	    ;;
+    esac
+	    
+    stowpkg_verify "${1:-$0}" && sed '1,/^'"$data_head"'$/d' "${1:-$0}" |
+	stowpkg_decode | stowpkg_inflate | (cd "$stowdir" && stowpkg_extract)
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_revoke([STOWABLE])	(Self-)revoke stowable package from stow directory
+##
+##  Non-local variables:
+##	- stowdir	(R) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_revoke() {
+    case ${stowdir:+=} in
+	=)  test -d "$stowdir" || {
+		echo "$stowdir: No such directory!" >&2
+		return 1
+	    }
+	    stowpkg_revokable ${1+"$@"} || return 1
+	    ;;
+	*)  echo "$command: No stow directory given!" >&2
+	    return 1
+	    ;;
+    esac
+
+    local pn
+    verbose=n stowpkg_list ${1+"$@"} 2>/dev/null | sort -ru | while read pn; do
+	if test -h "$stowdir/$pn"; then
+	    echo "\$ rm -f $stowdir/$pn"; rm -f "$stowdir/$pn"
+	elif test -d "$stowdir/$pn"; then
+	    echo "\$ rmdir $stowdir/$pn"; rmdir "$stowdir/$pn"
+	elif test -e "$stowdir/$pn"; then
+	    echo "\$ rm -f $stowdir/$pn"; rm -f "$stowdir/$pn"
+	fi
+    done
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_help([ACTION])	Show help (for ACTION)
+##
+##  Non-local variables:
+##	- suffixes	(W) ~~~~
+##	- command	(R) ~~~~
+##	- stowdir	(R) ~~~~
+##	- target	(R) ~~~~
+##	- archiver	(R) ~~~~
+##	- compressor	(R) ~~~~
+##	- encoder	(R) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_help() {
+    local suffix=`echo "${1+_$*}" | sed 'y/ /_/'` qb=\` qe=\'
+
+    case :${suffixes=_help:_version:_build:_info:_list}: in
+	*:${suffix}:*)	;;
+	*)  suffix=	;;
+    esac; case $suffix in
+	_help)		cat <<EOF
+Usage: $command $* [ACTION]
+	Show help (for ACTION).
+EOF
+	    ;;
+	_version)	cat <<EOF
+Usage: $command $*
+	Show version information.
+EOF
+	    ;;
+#-vvvv--8><-vvvv-#
+	_build)		cat <<EOF
+Usage: $command [OPTION ...] $* [PACKAGE [VERSION]]
+	Build stowable package.
+
+Valid options are:
+ -t, --target=TARGET	Use TARGET directory (default: $target)
+ -v, --verbose		Be verbose
+     --tar		Create archive with tar(1)
+ -A, --use-archiver, --use-archive-program=ARCHIVER
+			Create archive with ARCHIVER (default: $archiver)
+ -j, --bzip2		Compress with bzip2(1)
+ -J, --xz		Compress with xz(1)
+     --lzip		Compress with lzip(1)
+     --lzma		Compress with lzma(1)
+     --lzop		Compress with lzop(1)
+ -z, --gzip		Compress with gzip(1)
+ -Z, --compress		Compress with compress(1)
+ -I, --use-compressor, --use-compress-program=COMPRESSOR
+			Compress with COMPRESSOR (default: $compressor)
+ -#, --fast, --best	Set compression level
+ -E, --use-encoder, --use-encode-program=ENCODER
+			Encode with ENCODER (default: $encoder)
+EOF
+	    ;;
+#-^^^^--8><-^^^^-#
+	_info)		cat <<EOF
+Usage: $command $* [STOWABLE]
+	(Self-)show stowable package information.
+
+Valid options are:
+ -d, --dir, --stow-dir=STOWDIR
+			Use STOW DIRectory (default: $stowdir)
+ -v, --verbose		Be verbose
+EOF
+	    ;;
+	_list)		cat <<EOF
+Usage: $command [OPTION ...] $* [STOWABLE]
+	(Self-)list stowable package contents.
+
+Valid options are:
+ -d, --dir, --stow-dir=STOWDIR
+			Use STOW DIRectory (default: $stowdir)
+ -v, --verbose		Be verbose
+EOF
+	    ;;
+	_deploy)	cat <<EOF
+Usage: $command [OPTION ...] $* [STOWABLE]
+	(Self-)deploy stowable package into stow directory.
+
+Valid options are:
+ -d, --dir, --stow-dir=STOWDIR
+			Use STOW DIRectory (default: $stowdir)
+EOF
+	    ;;
+	_revoke)	cat <<EOF
+Usage: $command [OPTION ...] $* [STOWABLE]
+	(Self-)revoke stowable package from stow directory.
+
+Valid options are:
+ -d, --dir, --stow-dir=STOWDIR
+			Use STOW DIRectory (default: $stowdir)
+EOF
+	    ;;
+	*)		cat <<EOF
+Usage: $command [OPTION ...] ACTION [ARGUMENT ...]
+
+Possible actions are:`echo ":-:$suffixes" | sed 's/:-:/\n  */g;y/_:/ ,/'`
+Try ${QB-$qb}$command help ACTION${QE-$qe} for details.
+
+Valid OPTIONs are:
+ -h, --help		Show help
+
+EOF
+	    return
+	    ;;
+    esac
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_version()		Show version information
+##----------------------------------------------------------------------------
+stowpkg_version() {
+    cat <<EOF
+$command (@PACKAGE_NAME@) @PACKAGE_VERSION@
+Copyright © 2020 Das Computerlabor
+License GPLv2: GNU GPL version 2 or later
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+Please send bug reports to <@PACKAGE_BUGREPORT@>.
+EOF
+}
+
+##----------------------------------------------------------------------------
+##  Main program:
+##----------------------------------------------------------------------------
+getopt -T >/dev/null 2>&1 && {
+    echo "$command: Legacy getopt found!" >&2; exit 1
+} || case $? in
+    4)	optstring=hvA:jJzZI:123456789E:d:t:
+	longopts=trace,help,verbose,tar,use-archiver:,use-archive-program:
+	longopts=$longopts,bzip2,xz,lzip,lzma,lzop,gzip,compress
+	longopts=$longopts,use-compressor:,use-compress-program:
+	longopts=$longopts,fast,best,use-encoder:,use-encode-program:
+	longopts=$longopts,dir:,stow-dir:
+	longopts=$longopts,target:
+	;;
+    *)	echo "$command: No getopt found!" >&2
+	exit 1
+	;;
+esac
+args=`getopt -o"$optstring" -l"$longopts" -- ${1+"$@"}` || {
+    stowpkg_help >&2; exit 2
+}
+eval set shiftee "$args"; unset optstring longopts args
+while shift; do				## Process parsed options...
+    case $1 in
+	--trace)	TRACE='set -x'		;;
+	-h|--help)	stowpkg_help; exit 0	;;
+	-v|--verbose)	verbose=y		;;
+	   --tar)	archiver=tar		;;
+	-A|--use-archiver|--use-archive-program)
+			shift; archiver=$1	;;
+	-j|--bzip2)	compressor=bzip2	;;
+	-J|--xz)	compressor=xz		;;
+	   --lz[io]p|--lzma)
+			compressor=${1#--}	;;
+	-z|--gzip)	compressor=gzip		;;
+	-Z|--compress)	compressor=compress	;;
+	-I|--use-compressor|--use-compress-program)
+			shift; compressor=$1	;;
+	-1|--fast)	compression=1		;;
+	-[2345678])	compression=${1#-}	;;
+	-9|--best)	compression=9		;;
+	-E|--use-encoder|--use-encode-program)
+			shift; encoder=$1	;;
+	-d|--dir|--stow-dir)
+			shift; stowdir=$1	;;
+	-t|--target)	shift; target=$1	;;
+	--)		shift; break		;;
+    esac
+done
+${TRACE+$TRACE}
+case $#:$command in
+    0:?*.stow)
+	exec "$0" deploy
+	;;
+    *:?*.stow)
+	command=$0
+	suffixes=_help:_version:_info:_list:_deploy:_revoke
+	;;
+    *)
+	eval "`libdl-sh load`" && dl_atload stowpkg_atload
+	suffixes=_help:_version:_build:_info:_list:_deploy:_revoke
+	;;
+esac
+
+suffix=; while test $# -gt 0; do	## Extend suffix...
+    suffix=${suffix}_$1; shift
+    case :$suffixes: in
+	*:${suffix}_*)	;;
+	*)  break	;;
+    esac
+done
+
+case :$suffixes: in			## Extended suffix recognized?
+    *:${suffix}:*)			## Yes, derive...
+	action=`echo "$suffix" | sed 's/^_//;y/_/ /'`
+	stowpkg$suffix ${1+"$@"}	## ...and perform action
+	;;
+    *)	stowpkg_help >&2; exit 2	## No, show general help and
+	;;				## indicate usage error.
+esac; exit $?
+#-vvvv-INFO-vvvv-#

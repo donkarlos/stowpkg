@@ -488,11 +488,10 @@ target='"`    quote_sh "$target"	  `"'\
 ##	- data_head	(R) ~~~~
 ##----------------------------------------------------------------------------
 stowpkg_info() {
-    stowpkg_programs sed || return 1
-    sed '1,/^'"$info_head"'$/d;/^'"$data_head"'$/,$d' "${1:-$0}" || {
-	echo "${1:-$0}: Not a stowable package!" >&2
-	return 1			## Dump INFO section to stdout.
-    }
+    local sx='1,/^'"$info_head"'$/d;/^'"$data_head"'$/,$d'
+
+    stowpkg_verify "${1:-$0}" && sed "$sx" "${1:-$0}"
+					## Write INFO section to stdout.
 }
 
 ##----------------------------------------------------------------------------

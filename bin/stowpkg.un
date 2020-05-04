@@ -589,7 +589,7 @@ EOF
 	    ;;
 	_version)	cat <<EOF
 Usage: $command $*
-	Show version information.
+	Show version and license information.
 EOF
 	    ;;
 #-vvvv--8><-vvvv-#
@@ -673,7 +673,7 @@ EOF
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_version()		Show version information
+##  stowpkg_version()		Show version and license information
 ##----------------------------------------------------------------------------
 stowpkg_version() {
     cat <<EOF

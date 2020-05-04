@@ -365,23 +365,28 @@ stowpkg_encode() {
 ##				convert them into POSIX shell syntax
 ##----------------------------------------------------------------------------
 stowpkg_getvars() {
-    local mfpn="$1" sx n; shift		## Fetch MAKEFILE's pathname.
+    local mfpn="$1" re sx n; shift	## Fetch MAKEFILE's pathname.
 
     case ${1+=} in
-	=)  sx='y/	/ /;s/   */ /g;s/^ //;s/ $//'
+	=)  case ${dl_re_id+i}${dl_re_ident+I} in
+		i*) re=$dl_re_id	;;
+		I)  re=$dl_re_ident	;;
+		*)  return 1		;;
+	    esac; sx='y/	/ /;s/   */ /g;s/^ //;s/ $//'
 					## Have sed(1) Compress whitespace.
 	    for n in "$@"; do		## Foreach VARIABLE do...
-		expr "_$n" : "_$dl_re_ident$DS" >/dev/null &&
+		expr "_$n" : "_$re$DS" >/dev/null &&
 		    sx="$sx$NL"'/^\('"$n"'\) *= */bp'
 	    done			## Append sed(1) statements to pick
-					## VARIABLE.
+					## VARIABLE unless it has an invalid
+					## name.
 	    sx="$sx$NL"'d;:p'"$NL"'s//\1=/;s/'"$SQ"'/&'"$BS$BS"'&&/g'
 	    sx="$sx"';s/'"$SQ"'/&'"$BS$BS"'&&/g;s/=/&'"$SQ"'/;s/$/'"$SQ"'/'
 					## Append sed(1) statements to con-
 					## vert picked assignments into POSIX
 					## shell syntax.
-	    sed "$sx" "$mfpn"		## Do it!
-	    ;;
+	    sed "$sx" "$mfpn" 2>/dev/null
+	    ;;				## Do it!
     esac
 }
 

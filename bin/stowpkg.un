@@ -470,7 +470,7 @@ stowpkg_build() {
     undo_push 'rm -f' "$spbn"
     (cd "$destdir" && find "$spsn" | sort -u | stowpkg_archive) |
 	stowpkg_deflate | stowpkg_encode | sed '
-/^readonly /s/snip_[^ ]* //g;/suffixes=/s/_build://g
+/^readonly /s/snip_[^ ]* //g;/Build and m/s//M/
 /^'"$snip_head"'$/,/^'"$snip_tail"'$/d;/^'"$info_head"'$/a\
 encoder='"`   quote_sh "${encoder##*/}"   `"'\
 compressor='"`quote_sh "${compressor##*/}"`"'\

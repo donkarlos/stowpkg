@@ -574,7 +574,7 @@ stowpkg_revoke() {
 ##	- encoder	(R) Default encoder
 ##----------------------------------------------------------------------------
 stowpkg_help() {
-    local suffix=`echo "${1+_$*}" | sed 'y/ /_/'` qb=\` qe=\'
+    local suffix=`echo "${1+_$*}" | sed 'y/ /_/'` qb=${QB-\`} qe=${QE-\'}
 
     case :${suffixes=_help:_version:_build:_info:_list}: in
 	*:${suffix}:*)	;;

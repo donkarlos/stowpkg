@@ -58,10 +58,10 @@ stowpkg_atload() {
 #-^^^^--8><-^^^^-#
 ##----------------------------------------------------------------------------
 ##  stowpkg_program(PROGRAM [&CATEGORY])
-##				Ascertain that PROGRAM is present
+##				Ensure that PROGRAM (in CATEGORY) is present
 ##
 ##  Non-local variables:
-##	- &CATEGORY	(W) Name of program in CATEGORY
+##	- &CATEGORY	(W) CATEGORY PROGRAM's abs. pathname
 ##----------------------------------------------------------------------------
 stowpkg_program() {
     case ${1:+=} in			## PROGRAM passed?
@@ -84,7 +84,7 @@ stowpkg_program() {
 
 ##----------------------------------------------------------------------------
 ##  stowpkg_programs(PROGRAM ...)
-##				Ascertain that all PROGRAMs are present
+##				Ensure that all PROGRAMs are present
 ##----------------------------------------------------------------------------
 stowpkg_programs() {
     local status=0 program; for program in ${1+"$@"}; do
@@ -93,10 +93,13 @@ stowpkg_programs() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_decode([MODE])	~~~~
+##  stowpkg_decode([MODE])	Depending on MODE, either
+##				- indicate that the elected encoder
+##				  is supported for decoding or
+##				- decode datastream from stdin to stdout
 ##
 ##  Non-local variables:
-##	- encoder	(W) ~~~~
+##	- encoder	(W) Elected encoder's abs. pathname
 ##----------------------------------------------------------------------------
 stowpkg_decode() {
     case ${encoder:=unknown}${1+:$1} in
@@ -116,10 +119,13 @@ stowpkg_decode() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_inflate([MODE])	~~~~
+##  stowpkg_inflate([MODE])	Depending on MODE, either
+##				- indicate that the elected compressor
+##				  is supported for inflation or
+##				- inflate datastream from stdin to stdout
 ##
 ##  Non-local variables:
-##	- compressor	(W) ~~~~
+##	- compressor	(W) Elected compressor's abs. pathname
 ##----------------------------------------------------------------------------
 stowpkg_inflate() {
     case ${compressor:=unknown}${1+:$1} in
@@ -140,11 +146,15 @@ stowpkg_inflate() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_extract([MODE])	~~~~
+##  stowpkg_extract([MODE])	Depending on MODE, either
+##				- indicate that the elected archiver
+##				  is supported for extraction or
+##				- extract datastream from stdin to
+##				  stow directory
 ##
 ##  Non-local variables:
-##	- archiver	(W) ~~~~
-##	- verbose	(R) ~~~~
+##	- archiver	(W) Elected archiver's abs. pathname
+##	- verbose	(R) Specifies if extraction should be verbose
 ##----------------------------------------------------------------------------
 stowpkg_extract() {
     local v=
@@ -176,29 +186,28 @@ stowpkg_extract() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_verify(STOWABLE)	Ascertain that STOWABLE contains a stowable
-##				package
+##  stowpkg_verify(STOWABLE)	Ensure that STOWABLE package is deployable
 ##
 ##  Non-local variables:
 ##	- info_head	(R) ~~~~
 ##	- data_head	(R) ~~~~
-##	- target	(W) ~~~~
-##	- archiver	(W) ~~~~
-##	- compressor	(W) ~~~~
-##	- encoder	(W) ~~~~
+##	- archiver	(W) Elected archiver's abs. pathname
+##	- compressor	(W) Elected compressor's abs. pathname
+##	- encoder	(W) Elected decoder's abs. pathname
+##	- target	(W) Target directory STOWABLE was built for
 ##----------------------------------------------------------------------------
 stowpkg_verify() {
     stowpkg_programs sed || return $?	## Bail out unless sed(1) is present.
 
-    local info; unset target archiver compressor encoder
-					## Drop target/archiver/compressor/
-					## encoder presets.
+    local info; unset archiver compressor encoder target
+					## Forget archiver/compressor/encoder/
+					## target presets.
     eval "`sed '
 	1,/^'"$info_head"'$/d;/^'"$data_head"'$/,$d
-	/^target=/bp
 	/^archiver=/bp
 	/^compressor=/bp
 	/^encoder=/bp
+	/^target=/bp
 	d;:p
     ' "${1:--}"`" || {			## sed(1) succeeded in extracting the
 					## INFO section?
@@ -206,7 +215,7 @@ stowpkg_verify() {
 	return 1			## No, complain and indicate failure!
     }
 
-    for info in target archiver compressor encoder; do
+    for info in archiver compressor encoder target; do
 	eval 'case ${'"$info"':+=} in	## Foreach required package info do...
 	    =)		;;		## INFO section has it?
 	    *)	test	;;		## No, assume failure.
@@ -219,19 +228,18 @@ stowpkg_verify() {
     stowpkg_program "$archiver" archiver &&
 	stowpkg_program "$compressor" compressor &&
 	stowpkg_program "$encoder" encoder &&
-	stowpkg_extract supported &&	## Ascertain that required archiver,
+	stowpkg_extract supported &&	## Ensure that elected archiver,
 	stowpkg_inflate supported &&	## compressor, and encoder are present
 	stowpkg_decode supported	## and supported.
 }
 
 ##----------------------------------------------------------------------------
 ##  stowpkg_revokable([STOWABLE])
-##				Stowable package may be revoked from
-##				stow directory?
+##				Ensure that STOWABLE package is revokable
 ##
 ##  Non-local variables:
-##	- stowdir	(R) ~~~~
-##	- target	(R) ~~~~
+##	- stowdir	(R) Stow directory STOWABLE had been deployed in
+##	- target	(R) Target directory STOWABLE was built for
 ##----------------------------------------------------------------------------
 stowpkg_revokable() {
     local sppn="${1:-$0}" spbn spsn ifs lpn rpn nl='
@@ -251,11 +259,14 @@ stowpkg_revokable() {
 
 #-vvvv--8><-vvvv-#
 ##----------------------------------------------------------------------------
-##  stowpkg_archive([MODE])	~~~~
+##  stowpkg_archive([MODE])	Depending on MODE, either
+##				- indicate that the elected archiver
+##				  is supported or
+##				- archive pathnames fed by stdin to stdout
 ##
 ##  Non-local variables:
-##	- archiver	(W) ~~~~
-##	- verbose	(R) ~~~~
+##	- archiver	(W) Elected archiver's abs. pathname
+##	- verbose	(R) Specifies if archival should be verbose
 ##----------------------------------------------------------------------------
 stowpkg_archive() {
     local v=
@@ -281,11 +292,14 @@ stowpkg_archive() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_deflate([MODE])	~~~~
+##  stowpkg_deflate([MODE])	Depending on MODE, either
+##				- indicate that the elected compressor
+##				  is supported or
+##				- deflate datastream from stdin to stdout
 ##
 ##  Non-local variables:
-##	- compressor	(W) ~~~~
-##	- compression	(R) ~~~~
+##	- compressor	(W) Elected compressor's abs. pathname
+##	- compression	(R) Elected compression level
 ##----------------------------------------------------------------------------
 stowpkg_deflate() {
     case ${compressor:=unknown}${1+:$1} in
@@ -306,10 +320,13 @@ stowpkg_deflate() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_encode([MODE])	~~~~
+##  stowpkg_encode([MODE])	Depending on MODE, either
+##				- indicate that the elected encoder
+##				  is supported or
+##				- encode datastream from stdin to stdout
 ##
 ##  Non-local variables:
-##	- encoder	(W) ~~~~
+##	- encoder	(W) Elected encoder's abs. pathname
 ##----------------------------------------------------------------------------
 stowpkg_encode() {
     case ${encoder:=unknown}${1+:$1} in
@@ -329,21 +346,27 @@ stowpkg_encode() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_getvars(MAKEFILE [&NAME ...])
-##				~~~~
+##  stowpkg_getvars(MAKEFILE [&VARIABLE ...])
+##				Pick VARIABLE assignments from MAKEFILE and
+##				convert them into POSIX shell syntax
 ##----------------------------------------------------------------------------
 stowpkg_getvars() {
-    local mfpn="$1" sx n; shift		## Fetch Makefile's pathname.
+    local mfpn="$1" sx n; shift		## Fetch MAKEFILE's pathname.
 
     case ${1+=} in
 	=)  sx='y/	/ /;s/   */ /g;s/^ //;s/ $//'
-	    for n in "$@"; do
+					## Have sed(1) Compress whitespace.
+	    for n in "$@"; do		## Foreach VARIABLE do...
 		expr "_$n" : "_$dl_re_ident$DS" >/dev/null &&
 		    sx="$sx$NL"'/^\('"$n"'\) *= */bp'
-	    done
+	    done			## Append sed(1) statements to pick
+					## VARIABLE.
 	    sx="$sx$NL"'d;:p'"$NL"'s//\1=/;s/'"$SQ"'/&'"$BS$BS"'&&/g'
 	    sx="$sx"';s/'"$SQ"'/&'"$BS$BS"'&&/g;s/=/&'"$SQ"'/;s/$/'"$SQ"'/'
-	    sed "$sx" "$mfpn"
+					## Append sed(1) statements to con-
+					## vert picked assignments into POSIX
+					## shell syntax.
+	    sed "$sx" "$mfpn"		## Do it!
 	    ;;
     esac
 }
@@ -357,10 +380,10 @@ stowpkg_getvars() {
 ##	- snip_tail	(R) ~~~~
 ##	- info_head	(R) ~~~~
 ##	- data_head	(R) ~~~~
-##	- target	(R) ~~~~
-##	- archiver	(W) ~~~~
-##	- compressor	(W) ~~~~
-##	- encoder	(W) ~~~~
+##	- target	(R) Target directory stowable package is built for
+##	- archiver	(W) Elected archiver's abs. pathname
+##	- compressor	(W) Elected compressor's abs. pathname
+##	- encoder	(W) Elected encoder's abs. pathname
 ##----------------------------------------------------------------------------
 stowpkg_build() {
     stowpkg_programs mktemp sed make &&
@@ -440,6 +463,10 @@ target='"`    quote_sh "$target"	  `"'\
 #-^^^^--8><-^^^^-#
 ##----------------------------------------------------------------------------
 ##  stowpkg_info([STOWABLE])	(Self-)show stowable package information
+##
+##  Non-local variables:
+##	- info_head	(R) ~~~~
+##	- data_head	(R) ~~~~
 ##----------------------------------------------------------------------------
 stowpkg_info() {
     stowpkg_programs sed || return 1
@@ -451,6 +478,9 @@ stowpkg_info() {
 
 ##----------------------------------------------------------------------------
 ##  stowpkg_list([STOWABLE])	(Self-)list stowable package contents
+##
+##  Non-local variables:
+##	- data_head	(R) ~~~~
 ##----------------------------------------------------------------------------
 stowpkg_list() {
     stowpkg_verify "${1:-$0}" && sed '1,/^'"$data_head"'$/d' "${1:-$0}" |
@@ -458,10 +488,11 @@ stowpkg_list() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_deploy([STOWABLE])	(Self-)deploy stowable package into stow dir.
+##  stowpkg_deploy([STOWABLE])	(Self-)deploy STOWABLE into stow directory
 ##
 ##  Non-local variables:
-##	- stowdir	(R) ~~~~
+##	- data_head	(R) ~~~~
+##	- stowdir	(R) Stow directory STOWABLE will be deployed into
 ##----------------------------------------------------------------------------
 stowpkg_deploy() {
     case ${stowdir:+=} in
@@ -480,7 +511,7 @@ stowpkg_deploy() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_revoke([STOWABLE])	(Self-)revoke stowable package from stow directory
+##  stowpkg_revoke([STOWABLE])	(Self-)revoke STOWABLE from stow directory
 ##
 ##  Non-local variables:
 ##	- stowdir	(R) ~~~~
@@ -516,11 +547,11 @@ stowpkg_revoke() {
 ##  Non-local variables:
 ##	- suffixes	(W) ~~~~
 ##	- command	(R) ~~~~
-##	- stowdir	(R) ~~~~
-##	- target	(R) ~~~~
-##	- archiver	(R) ~~~~
-##	- compressor	(R) ~~~~
-##	- encoder	(R) ~~~~
+##	- stowdir	(R) Default stow directory
+##	- target	(R) Default target directory
+##	- archiver	(R) Default archiver
+##	- compressor	(R) Default compressor
+##	- encoder	(R) Default encoder
 ##----------------------------------------------------------------------------
 stowpkg_help() {
     local suffix=`echo "${1+_$*}" | sed 'y/ /_/'` qb=\` qe=\'

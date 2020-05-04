@@ -63,13 +63,14 @@ stowpkg_atload() {
 ##				Ensure that PROGRAM (in CATEGORY) is present
 ##
 ##  Non-local variables:
+##	- action	(R) ~~~~
 ##	- &CATEGORY	(W) CATEGORY PROGRAM's abs. pathname
 ##----------------------------------------------------------------------------
 stowpkg_program() {
     case ${1:+=} in			## PROGRAM passed?
 	=)  local program="`command -v "$1"`" || {
 					## Yes, is it present?
-		echo "$command: Missing ${2-program} $1!" >&2
+		echo "$command $action: Missing ${2-program} $1!" >&2
 		return 1		## No, complain and indicate failure!
 	    }
 	    case ${2-program} in	## Is it supposed to be an archiver/
@@ -101,6 +102,7 @@ stowpkg_programs() {
 ##				- decode datastream from stdin to stdout
 ##
 ##  Non-local variables:
+##	- action	(R) ~~~~
 ##	- encoder	(W) Elected encoder's abs. pathname
 ##----------------------------------------------------------------------------
 stowpkg_decode() {
@@ -109,7 +111,7 @@ stowpkg_decode() {
 	    return 0
 	    ;;
 	*:supported)
-	    echo "$command: Encoder $encoder not supported!" >&2
+	    echo "$command $action: Encoder $encoder not supported!" >&2
 	    return 1
 	    ;;
 	*/base64)
@@ -127,6 +129,7 @@ stowpkg_decode() {
 ##				- inflate datastream from stdin to stdout
 ##
 ##  Non-local variables:
+##	- action	(R) ~~~~
 ##	- compressor	(W) Elected compressor's abs. pathname
 ##----------------------------------------------------------------------------
 stowpkg_inflate() {
@@ -136,7 +139,7 @@ stowpkg_inflate() {
 	    return 0
 	    ;;
 	*:supported)
-	    echo "$command: Compressor $compressor not supported!" >&2
+	    echo "$command $action: Compressor $compressor not supported!" >&2
 	    return 1
 	    ;;
 	*/bzip2|*/xz|*/lz[io]p|*/lzma|*/gzip|*/compress)
@@ -155,6 +158,7 @@ stowpkg_inflate() {
 ##				  stow directory
 ##
 ##  Non-local variables:
+##	- action	(R) ~~~~
 ##	- archiver	(W) Elected archiver's abs. pathname
 ##	- verbose	(R) Specifies if extraction should be verbose
 ##----------------------------------------------------------------------------
@@ -167,7 +171,7 @@ stowpkg_extract() {
 	    return 0
 	    ;;
 	*:supported)
-	    echo "$command: Archiver $archiver not supported!" >&2
+	    echo "$command $action: Archiver $archiver not supported!" >&2
 	    return 1
 	    ;;
 	*/cpio:list)
@@ -193,11 +197,12 @@ stowpkg_extract() {
 ##  Non-local variables:
 ##	- info_head	(R) ~~~~
 ##	- data_head	(R) ~~~~
+##	- action	(R) ~~~~
+##	- arch		(W) Architecture STOWABLE was built for
+##	- target	(W) Target directory STOWABLE was built for
 ##	- archiver	(W) Elected archiver's abs. pathname
 ##	- compressor	(W) Elected compressor's abs. pathname
 ##	- encoder	(W) Elected decoder's abs. pathname
-##	- arch		(W) Architecture STOWABLE was built for
-##	- target	(W) Target directory STOWABLE was built for
 ##----------------------------------------------------------------------------
 stowpkg_verify() {
     stowpkg_programs sed || return $?	## Bail out unless sed(1) is present.
@@ -216,7 +221,7 @@ stowpkg_verify() {
 	d;:p
     ' "${1:--}"`" || {			## sed(1) succeeded in extracting the
 					## INFO section?
-	echo "${1:--}: No such stowable package!" >&2
+	echo "$command $action: ${1:--}: No such stowable package!" >&2
 	return 1			## No, complain and indicate failure!
     }
 
@@ -226,15 +231,15 @@ stowpkg_verify() {
 	    *)	status=1;;		## No, assume failure.
 	esac'
     done; test $status -eq 0 || {	## All required infos extracted?
-	echo "${1:--}: Not a stowable package!" >&2
+	echo "$command $action: ${1:--}: Not a stowable package!" >&2
 	return 1			## No, complain and indicate failure!
     }
 
     case $suffix:$arch in		## STOWABLE suitable for ACTION?
 	_info:*|_list:*|_revoke:*|*:$uname_s.$uname_m|*:all)
 	    ;;
-	*)  echo "${1:--}: Can${sq}t $action stowable package built"	\
-		 "for $arch on $uname_s.$uname_m!" >&2
+	*)  echo "$command $action: ${1:--}: Can${sq}t $action"		\
+		 "stowable package built for $arch on $uname_s.$uname_m!" >&2
 	    return 1			## No, complain and indicate failure!
 	    ;;
     esac
@@ -252,6 +257,7 @@ stowpkg_verify() {
 ##				Ensure that STOWABLE package is revokable
 ##
 ##  Non-local variables:
+##	- action	(R) ~~~~
 ##	- stowdir	(R) Stow directory STOWABLE had been deployed in
 ##	- target	(R) Target directory STOWABLE was built for
 ##----------------------------------------------------------------------------
@@ -264,7 +270,7 @@ stowpkg_revokable() {
     `; shift; IFS=$ifs; for lpn in ${1+"$@"}; do
 	rpn=`readlink -e "$lpn"` && case $rpn in
 	    $stowdir/$spsn/*)
-		echo "$command: Stow package $spsn is still installed!" >&2
+		echo "$command $action: $spsn is still installed!" >&2
 		return 1
 		;;
 	esac
@@ -279,6 +285,7 @@ stowpkg_revokable() {
 ##				- archive pathnames fed by stdin to stdout
 ##
 ##  Non-local variables:
+##	- action	(R) ~~~~
 ##	- archiver	(W) Elected archiver's abs. pathname
 ##	- verbose	(R) Specifies if archival should be verbose
 ##----------------------------------------------------------------------------
@@ -291,7 +298,7 @@ stowpkg_archive() {
 	    return 0
 	    ;;
 	*:supported)
-	    echo "$command: Archiver $archiver not supported!" >&2
+	    echo "$command $action: Archiver $archiver not supported!" >&2
 	    return 1
 	    ;;
 	*/cpio)
@@ -312,6 +319,7 @@ stowpkg_archive() {
 ##				- deflate datastream from stdin to stdout
 ##
 ##  Non-local variables:
+##	- action	(R) ~~~~
 ##	- compressor	(W) Elected compressor's abs. pathname
 ##	- compression	(R) Elected compression level
 ##----------------------------------------------------------------------------
@@ -322,7 +330,7 @@ stowpkg_deflate() {
 	    return 0
 	    ;;
 	*:supported)
-	    echo "$command: Compressor $compressor not supported!" >&2
+	    echo "$command $action: Compressor $compressor not supported!" >&2
 	    return 1
 	    ;;
 	*/bzip2|*/xz|*/lz[io]p|*/lzma|*/gzip|*/compress)
@@ -340,6 +348,7 @@ stowpkg_deflate() {
 ##				- encode datastream from stdin to stdout
 ##
 ##  Non-local variables:
+##	- action	(R) ~~~~
 ##	- encoder	(W) Elected encoder's abs. pathname
 ##----------------------------------------------------------------------------
 stowpkg_encode() {
@@ -348,7 +357,7 @@ stowpkg_encode() {
 	    return 0
 	    ;;
 	*:supported)
-	    echo "$command: Encoder $encoder not supported!" >&2
+	    echo "$command $action: Encoder $encoder not supported!" >&2
 	    return 1
 	    ;;
 	*/base64)
@@ -399,6 +408,8 @@ stowpkg_getvars() {
 ##	- snip_tail	(R) ~~~~
 ##	- info_head	(R) ~~~~
 ##	- data_head	(R) ~~~~
+##	- action	(R) ~~~~
+##	- arch		(R) ~~~~
 ##	- target	(R) Target directory stowable package is built for
 ##	- archiver	(W) Elected archiver's abs. pathname
 ##	- compressor	(W) Elected compressor's abs. pathname
@@ -416,11 +427,11 @@ stowpkg_build() {
 					## chiver/compressor/encoder avail-
 					## ability and supportedness.
     test -f configure && test -x configure || {
-	echo "$command: No configure script found!" >&2
+	echo "$command $action: No configure script found!" >&2
 	return 1			## Complain and abort unless configure
     }					## script exists.
 
-    echo "$command: Prepare source..."
+    echo "$command $action: Prepare source..."
     local srcdir="`pwd`" tmpdir builddir destdir package version	\
 	  PACKAGE_TARNAME PACKAGE_VERSION PACKAGE VERSION spsn spbn
 
@@ -432,13 +443,13 @@ stowpkg_build() {
     else
 	undo_push 'rm -f' "$srcdir"/config.status
     fi || {
-	echo "$command: Couldn${SQ}t prepare source for building!" >&2
+	echo "$command $action: Couldn${SQ}t prepare source for building!" >&2
 	return 1
     }
 
-    echo "$command: Configure source..."
+    echo "$command $action: Configure source..."
     (cd "$builddir" && "$srcdir"/configure --prefix="$target") || {
-	echo "$command: Couldn${SQ}t configure source!" >&2
+	echo "$command $action: Couldn${SQ}t configure source!" >&2
 	return 1
     }
 
@@ -454,19 +465,19 @@ stowpkg_build() {
 	    ;;
     esac; spsn=$package${version:+_$version}; spbn=$spsn.stow
 
-    echo "$command: Build $spsn..."
+    echo "$command $action: Build $spsn..."
     (cd "$builddir" && make) || {
-	echo "$command: Couldn${SQ}t build $spsn!" >&2
+	echo "$command $action: Couldn${SQ}t build $spsn!" >&2
 	return 1
     }
 
-    echo "$command: Install $spsn..."
+    echo "$command $action: Install $spsn..."
     (cd "$builddir" && make DESTDIR="$destdir" prefix="/$spsn" install) || {
-	echo "$command: Couldn${SQ}t install $spsn!" >&2
+	echo "$command $action: Couldn${SQ}t install $spsn!" >&2
 	return 1
     }
 
-    echo "$command: Assemble $spbn..."
+    echo "$command $action: Assemble $spbn..."
     undo_push 'rm -f' "$spbn"
     (cd "$destdir" && find "$spsn" | sort -u | stowpkg_archive) |
 	stowpkg_deflate | stowpkg_encode | sed '
@@ -512,6 +523,7 @@ stowpkg_list() {
 ##
 ##  Non-local variables:
 ##	- data_head	(R) ~~~~
+##	- action	(R) ~~~~
 ##	- stowdir	(R) Stow directory STOWABLE will be deployed into
 ##----------------------------------------------------------------------------
 stowpkg_deploy() {
@@ -519,11 +531,11 @@ stowpkg_deploy() {
 
     case ${stowdir:+=} in
 	=)  test -d "$stowdir" || {
-		echo "$stowdir: No such directory!" >&2
+		echo "$command $action: $stowdir: No such directory!" >&2
 		return 1
 	    }
 	    ;;
-	*)  echo "$command: No stow directory given!" >&2
+	*)  echo "$command $action: No stow directory given!" >&2
 	    return 1
 	    ;;
     esac
@@ -536,17 +548,18 @@ stowpkg_deploy() {
 ##  stowpkg_revoke([STOWABLE])	(Self-)revoke STOWABLE from stow directory
 ##
 ##  Non-local variables:
+##	- action	(R) ~~~~
 ##	- stowdir	(R) ~~~~
 ##----------------------------------------------------------------------------
 stowpkg_revoke() {
     case ${stowdir:+=} in
 	=)  test -d "$stowdir" || {
-		echo "$stowdir: No such directory!" >&2
+		echo "$command $action: $stowdir: No such directory!" >&2
 		return 1
 	    }
 	    stowpkg_revokable ${1+"$@"} || return 1
 	    ;;
-	*)  echo "$command: No stow directory given!" >&2
+	*)  echo "$command $action: No stow directory given!" >&2
 	    return 1
 	    ;;
     esac

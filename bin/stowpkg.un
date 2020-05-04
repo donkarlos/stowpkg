@@ -596,7 +596,8 @@ Usage: $command [OPTION ...] $* [PACKAGE [VERSION]]
 	Build stowable package.
 
 Valid options are:
- -t, --target=TARGET	Use TARGET directory (default: $target)
+ -a, --arch=ARCH	Build for ARCHitecture (default: $arch)
+ -t, --target=TARGET	Build for TARGET directory (default: $target)
  -v, --verbose		Be verbose
      --tar		Create archive with tar(1)
  -A, --use-archiver, --use-archive-program=ARCHIVER
@@ -690,13 +691,12 @@ EOF
 getopt -T >/dev/null 2>&1 && {
     echo "$command: Legacy getopt found!" >&2; exit 1
 } || case $? in
-    4)	optstring=hvA:jJzZI:123456789E:d:t:
+    4)	optstring=hvA:jJzZI:123456789E:a:d:t:
 	longopts=trace,help,verbose,tar,use-archiver:,use-archive-program:
 	longopts=$longopts,bzip2,xz,lzip,lzma,lzop,gzip,compress
 	longopts=$longopts,use-compressor:,use-compress-program:
 	longopts=$longopts,fast,best,use-encoder:,use-encode-program:
-	longopts=$longopts,dir:,stow-dir:
-	longopts=$longopts,target:
+	longopts=$longopts,arch:,dir:,stow-dir:,target:
 	;;
     *)	echo "$command: No getopt found!" >&2
 	exit 1
@@ -727,6 +727,7 @@ while shift; do				## Process parsed options...
 	-9|--best)	compression=9		;;
 	-E|--use-encoder|--use-encode-program)
 			shift; encoder=$1	;;
+	-a|--arch)	shift; arch=$1		;;
 	-d|--dir|--stow-dir)
 			shift; stowdir=$1	;;
 	-t|--target)	shift; target=$1	;;

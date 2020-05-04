@@ -515,6 +515,8 @@ stowpkg_list() {
 ##	- stowdir	(R) Stow directory STOWABLE will be deployed into
 ##----------------------------------------------------------------------------
 stowpkg_deploy() {
+    local sx='1,/^'"$data_head"'$/d'
+
     case ${stowdir:+=} in
 	=)  test -d "$stowdir" || {
 		echo "$stowdir: No such directory!" >&2
@@ -526,7 +528,7 @@ stowpkg_deploy() {
 	    ;;
     esac
 	    
-    stowpkg_verify "${1:-$0}" && sed '1,/^'"$data_head"'$/d' "${1:-$0}" |
+    stowpkg_verify "${1:-$0}" && sed "$sx" "${1:-$0}" |
 	stowpkg_decode | stowpkg_inflate | (cd "$stowdir" && stowpkg_extract)
 }
 

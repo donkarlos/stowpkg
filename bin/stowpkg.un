@@ -231,7 +231,7 @@ stowpkg_verify() {
     }
 
     case $suffix:$arch in		## STOWABLE suitable for ACTION?
-	_info:*|_revoke:*|*:$uname_s.$uname_m|*:all)
+	_info:*|_list:*|_revoke:*|*:$uname_s.$uname_m|*:all)
 	    ;;
 	*)  echo "${1:--}: Can${sq}t $action stowable package built"	\
 		 "for $arch on $uname_s.$uname_m!" >&2
@@ -501,7 +501,9 @@ stowpkg_info() {
 ##	- data_head	(R) ~~~~
 ##----------------------------------------------------------------------------
 stowpkg_list() {
-    stowpkg_verify "${1:-$0}" && sed '1,/^'"$data_head"'$/d' "${1:-$0}" |
+    local sx='1,/^'"$data_head"'$/d'
+
+    stowpkg_verify "${1:-$0}" && sed "$sx" "${1:-$0}" |
 	stowpkg_decode | stowpkg_inflate | stowpkg_extract list
 }
 

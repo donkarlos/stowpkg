@@ -199,7 +199,8 @@ stowpkg_extract() {
 stowpkg_verify() {
     stowpkg_programs sed || return $?	## Bail out unless sed(1) is present.
 
-    local info; unset archiver compressor encoder target
+    local status=0 info		## Assume success.
+    unset archiver compressor encoder target
 					## Forget archiver/compressor/encoder/
 					## target presets.
     eval "`sed '
@@ -218,9 +219,9 @@ stowpkg_verify() {
     for info in archiver compressor encoder target; do
 	eval 'case ${'"$info"':+=} in	## Foreach required package info do...
 	    =)		;;		## INFO section has it?
-	    *)	test	;;		## No, assume failure.
+	    *)	status=1;;		## No, assume failure.
 	esac'
-    done || {				## All required infos extracted?
+    done; test $status -eq 0 || {	## All required infos extracted?
 	echo "${1:--}: Not a stowable package!" >&2
 	return 1			## No, complain and indicate failure!
     }

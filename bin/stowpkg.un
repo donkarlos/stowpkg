@@ -567,7 +567,7 @@ stowpkg_revoke() {
 ##  stowpkg_help([ACTION])	Show help (for ACTION)
 ##
 ##  Non-local variables:
-##	- suffixes	(W) ~~~~
+##	- suffixes	(R) ~~~~
 ##	- command	(R) ~~~~
 ##	- stowdir	(R) Default stow directory
 ##	- target	(R) Default target directory
@@ -578,7 +578,7 @@ stowpkg_revoke() {
 stowpkg_help() {
     local suffix=`echo "${1+_$*}" | sed 'y/ /_/'` qb=${QB-\`} qe=${QE-\'}
 
-    case :${suffixes=_help:_version:_build:_info:_list}: in
+    case :$suffixes: in
 	*:${suffix}:*)	;;
 	*)  suffix=	;;
     esac; case $suffix in
@@ -745,13 +745,17 @@ case $#:$command in
 	command=$0
 	suffixes=_help:_version:_info:_list:_deploy:_revoke
 	;;
+#-vvvv--8><-vvvv-#
     *)
 	eval "`libdl-sh load`" && dl_atload stowpkg_atload
 	suffixes=_help:_version:_build:_info:_list:_deploy:_revoke
 	;;
-esac
-
-suffix=; while test $# -gt 0; do	## Extend suffix...
+#-^^^^--8><-^^^^-#
+esac; case ${suffixes:+=} in
+    =)	;;
+    *)	echo "$command: Ran out of actions!" >&2
+	exit 2
+esac; suffix=; while test $# -gt 0; do	## Extend suffix...
     suffix=${suffix}_$1; shift
     case :$suffixes: in
 	*:${suffix}_*)	;;

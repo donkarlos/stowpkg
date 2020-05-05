@@ -40,8 +40,8 @@ unset GETOPT_COMPATIBLE			## Make getopt(1) behave.
 unset GREP_OPTIONS GREP_COLOR GREP_COLORS
 					## Make the grep(1)s behave.
 
-unset TRACE compression; verbose=n archiver=cpio compressor=xz encoder=base64
-target=@prefix@ stowdir=@stowdir@ uname_s=`uname -s` uname_m=`uname -m`
+unset TRACE stowdir compression; verbose=n archiver=cpio compressor=xz
+encoder=base64 target=@prefix@ uname_s=`uname -s` uname_m=`uname -m`
 arch=$uname_s.$uname_m; readonly uname_s uname_m
 					## Provide sane defaults.
 
@@ -582,7 +582,6 @@ stowpkg_revoke() {
 ##  Non-local variables:
 ##	- suffixes	(R) ~~~~
 ##	- command	(R) ~~~~
-##	- stowdir	(R) Default stow directory
 ##	- target	(R) Default target directory
 ##	- archiver	(R) Default archiver
 ##	- compressor	(R) Default compressor
@@ -637,8 +636,6 @@ Usage: $command $* [STOWABLE]
 	(Self-)show stowable package information.
 
 Valid options are:
- -d, --dir, --stow-dir=STOWDIR
-			Use STOW DIRectory (default: $stowdir)
  -v, --verbose		Be verbose
 EOF
 	    ;;
@@ -647,8 +644,6 @@ Usage: $command [OPTION ...] $* [STOWABLE]
 	(Self-)list stowable package contents.
 
 Valid options are:
- -d, --dir, --stow-dir=STOWDIR
-			Use STOW DIRectory (default: $stowdir)
  -v, --verbose		Be verbose
 EOF
 	    ;;
@@ -658,7 +653,7 @@ Usage: $command [OPTION ...] $* [STOWABLE]
 
 Valid options are:
  -d, --dir, --stow-dir=STOWDIR
-			Use STOW DIRectory (default: $stowdir)
+			Use STOW DIRectory
 EOF
 	    ;;
 	_revoke)	cat <<EOF
@@ -667,7 +662,7 @@ Usage: $command [OPTION ...] $* [STOWABLE]
 
 Valid options are:
  -d, --dir, --stow-dir=STOWDIR
-			Use STOW DIRectory (default: $stowdir)
+			Use STOW DIRectory
 EOF
 	    ;;
 	*)		cat <<EOF

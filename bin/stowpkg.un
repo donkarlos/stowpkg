@@ -432,9 +432,10 @@ stowpkg_build() {
 	stowpkg_archive supported &&
 	stowpkg_deflate supported &&
 	stowpkg_encode supported || return $?
-					## Check prerequisites as well as ar-
-					## chiver/compressor/encoder avail-
-					## ability and supportedness.
+					## Ensure that requisite programs,
+					## elected archiver, compressor, and
+					## encoder are present and supported.
+
     test -f configure && test -x configure || {
 	echo "$command $action: No configure script found!" >&2
 	return 1			## Complain and abort unless configure

@@ -559,6 +559,8 @@ stowpkg_revoke() {
 	return 1
     }
 
+    stowpkg_verify "${1:-$0}" && stowpkg_revocable "${1:-$0}" || return 1
+
     local pn
     verbose=n stowpkg_list ${1+"$@"} 2>/dev/null | sort -ru | while read pn; do
 	if test -h "$stowdir/$pn"; then

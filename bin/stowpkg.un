@@ -529,17 +529,15 @@ stowpkg_list() {
 stowpkg_deploy() {
     local sx='1,/^'"$data_head"'$/d'
 
-    case ${stowdir:+=} in
-	=)  test -d "$stowdir" || {
-		echo "$command $action: $stowdir: No such directory!" >&2
-		return 1
-	    }
-	    ;;
-	*)  echo "$command $action: No stow directory given!" >&2
-	    return 1
-	    ;;
-    esac
-	    
+    test -n "${stowdir-}" || {
+	echo "$command $action: No stow directory given!" >&2
+	return 1
+    }
+    test -d "$stowdir" || {
+	echo "$command $action: $stowdir: No such directory!" >&2
+	return 1
+    }
+
     stowpkg_verify "${1:-$0}" && sed "$sx" "${1:-$0}" |
 	stowpkg_decode | stowpkg_inflate | (cd "$stowdir" && stowpkg_extract)
 }
@@ -552,17 +550,14 @@ stowpkg_deploy() {
 ##	- stowdir	(R) ~~~~
 ##----------------------------------------------------------------------------
 stowpkg_revoke() {
-    case ${stowdir:+=} in
-	=)  test -d "$stowdir" || {
-		echo "$command $action: $stowdir: No such directory!" >&2
-		return 1
-	    }
-	    stowpkg_revocable "${1:-$0}" || return 1
-	    ;;
-	*)  echo "$command $action: No stow directory given!" >&2
-	    return 1
-	    ;;
-    esac
+    test -n "${stowdir-}" || {
+	echo "$command $action: No stow directory given!" >&2
+	return 1
+    }
+    test -d "$stowdir" || {
+	echo "$command $action: $stowdir: No such directory!" >&2
+	return 1
+    }
 
     local pn
     verbose=n stowpkg_list ${1+"$@"} 2>/dev/null | sort -ru | while read pn; do

@@ -408,6 +408,7 @@ stowpkg_getvars() {
 ##	- snip_tail	(R) ~~~~
 ##	- info_head	(R) ~~~~
 ##	- data_head	(R) ~~~~
+##	- hostarch	(R) ~~~~
 ##	- action	(R) ~~~~
 ##	- arch		(R) ~~~~
 ##	- target	(R) Target directory stowable package is built for
@@ -416,6 +417,14 @@ stowpkg_getvars() {
 ##	- encoder	(W) Elected encoder's abs. pathname
 ##----------------------------------------------------------------------------
 stowpkg_build() {
+    case $arch in
+	$hostarch|all)
+	    ;;
+	*)  echo "$command $action: Don${SQ}t know how to build for $arch!" >&2
+	    return 1
+	    ;;
+    esac
+
     stowpkg_programs mktemp sed make &&
 	stowpkg_program "$archiver" archiver &&
 	stowpkg_program "$compressor" compressor &&

@@ -27,7 +27,8 @@
 ##  Initialization:
 #-----------------------------------------------------------------------------
 LC_ALL=C; export LC_ALL			## Avoid locale insanities.
-command=`basename "$0"`			## Determine command name.
+command=`basename "$0"`; readonly command
+					## Determine command name.
 #-vvvv--8><-vvvv-#
 snip_head='#-vvvv--8><-vvvv-#'		## Define snip head and tail.
 snip_tail='#-^^^^--8><-^^^^-#'
@@ -750,7 +751,6 @@ case $#:$command in
 	exec "$0" deploy
 	;;
     *:?*.stow)
-	command=$0
 	suffixes=_help:_version:_info:_list:_deploy:_revoke
 	;;
 #-vvvv--8><-vvvv-#

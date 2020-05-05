@@ -583,7 +583,7 @@ stowpkg_revoke() {
 	elif test -e "$pn"; then
 	    $ECHO "$ds rm -f $pn"; rm -f "$pn"
 	fi
-    done
+    done || :
 }
 
 ##----------------------------------------------------------------------------

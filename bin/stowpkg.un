@@ -613,12 +613,12 @@ Usage: $command $* [ACTION]
 	Show help (for ACTION).
 EOF
 	    ;;
+#-vvvv--8><-vvvv-#
 	_version)	cat <<EOF
 Usage: $command $*
 	Show version and license information.
 EOF
 	    ;;
-#-vvvv--8><-vvvv-#
 	_build)		cat <<EOF
 Usage: $command [OPTION ...] $* [PACKAGE [VERSION]]
 	Build stowable package.
@@ -695,6 +695,7 @@ EOF
     esac
 }
 
+#-vvvv--8><-vvvv-#
 ##----------------------------------------------------------------------------
 ##  stowpkg_version()		Show version and license information
 ##----------------------------------------------------------------------------
@@ -710,6 +711,7 @@ Please send bug reports to <@PACKAGE_BUGREPORT@>.
 EOF
 }
 
+#-^^^^--8><-^^^^-#
 ##----------------------------------------------------------------------------
 ##  Main program:
 ##----------------------------------------------------------------------------
@@ -765,7 +767,7 @@ case $#:$command in
 	exec "$0" deploy
 	;;
     *:?*.stow)
-	suffixes=_help:_version:_info:_list:_deploy:_revoke
+	suffixes=_help:_info:_list:_deploy:_revoke
 	;;
 #-vvvv--8><-vvvv-#
     *)

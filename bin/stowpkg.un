@@ -714,7 +714,7 @@ EOF
 ##  Main program:
 ##----------------------------------------------------------------------------
 getopt -T >/dev/null 2>&1 && {
-    echo "$command: Legacy getopt found!" >&2; exit 1
+    echo "$command: Legacy getopt(1) found!" >&2; exit 1
 } || case $? in
     4)	optstring=hvA:jJzZI:123456789E:a:d:t:
 	longopts=trace,help,verbose,tar,use-archiver:,use-archive-program:
@@ -723,7 +723,7 @@ getopt -T >/dev/null 2>&1 && {
 	longopts=$longopts,fast,best,use-encoder:,use-encode-program:
 	longopts=$longopts,arch:,dir:,stow-dir:,target:
 	;;
-    *)	echo "$command: No getopt found!" >&2
+    *)	echo "$command: Missing getopt(1)!" >&2
 	exit 1
 	;;
 esac

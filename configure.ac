@@ -20,7 +20,7 @@ dnl
 dnl AUTHOR(S):	ks	Karl Schmitz <carolus.faber@gmail.com>
 dnl
 dnl WRITTEN BY:	ks	2020-05-03
-dnl CHANGED BY:
+dnl CHANGED BY:	ks	2020-05-05	Release 0.2.
 dnl
 dnl NOTE:   (1)	Update the build system with autoreconf(1).
 dnl	    (2)	AM_INIT_AUTOMAKE() already invokes AC_ARG_PROGRAM, AC_PROG_-
@@ -30,7 +30,7 @@ dnl
 dnl Initialization:
 dnl
 AC_INIT([Build and manage self-deploying stowable packages],
-    [0.2~0], [carolus.faber@gmail.com], [stowpkg])
+    [0.2], [carolus.faber@gmail.com], [stowpkg])
 AC_PREREQ([2.61])
 AC_CONFIG_SRCDIR([bin/stowpkg.un])
 AC_CONFIG_AUX_DIR([auto])

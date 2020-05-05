@@ -472,7 +472,7 @@ stowpkg_build() {
 	    package=${PACKAGE_TARNAME-${PACKAGE-`basename "$srcdir"`}}
 	    version=${PACKAGE_VERSION-${VERSION-}}
 	    ;;
-    esac; spsn=$package${version:+_$version}; spbn=$spsn.stow
+    esac; spsn=$package${version:+_$version}; spbn=${spsn}_$arch.stow
 
     echo "$command $action: Build $spsn..."
     (cd "$builddir" && make) || {
@@ -495,6 +495,7 @@ stowpkg_build() {
 encoder='"`   quote_sh "${encoder##*/}"   `"'\
 compressor='"`quote_sh "${compressor##*/}"`"'\
 archiver='"`  quote_sh "${archiver##*/}"  `"'\
+arch='"`      quote_sh "$arch"	  	  `"'\
 target='"`    quote_sh "$target"	  `"'\
 '"$data_head$NL" "$0" - >$spbn	&& test -s "$spbn" && chmod +x "$spbn"
 }

@@ -546,10 +546,13 @@ stowpkg_deploy() {
 ##  stowpkg_revoke([STOWABLE])	(Self-)revoke STOWABLE from stow directory
 ##
 ##  Non-local variables:
+##	- data_head	(R) ~~~~
 ##	- action	(R) ~~~~
 ##	- stowdir	(R) ~~~~
 ##----------------------------------------------------------------------------
 stowpkg_revoke() {
+    local sx='1,/^'"$data_head"'$/d' rn pn
+
     test -n "${stowdir-}" || {
 	echo "$command $action: No stow directory given!" >&2
 	return 1
@@ -561,14 +564,15 @@ stowpkg_revoke() {
 
     stowpkg_verify "${1:-$0}" && stowpkg_revocable "${1:-$0}" || return 1
 
-    local pn
-    verbose=n stowpkg_list ${1+"$@"} 2>/dev/null | sort -ru | while read pn; do
-	if test -h "$stowdir/$pn"; then
-	    echo "\$ rm -f $stowdir/$pn"; rm -f "$stowdir/$pn"
-	elif test -d "$stowdir/$pn"; then
-	    echo "\$ rmdir $stowdir/$pn"; rmdir "$stowdir/$pn"
-	elif test -e "$stowdir/$pn"; then
-	    echo "\$ rm -f $stowdir/$pn"; rm -f "$stowdir/$pn"
+    sed "$sx" "${1:-$0}" | stowpkg_decode | stowpkg_inflate |
+	verbose=n stowpkg_extract list 2>/dev/null | sort -ru | while read rn; do
+	pn=$stowdir/$rn
+	if test -h "$pn"; then
+	    echo "\$ rm -f $pn"; rm -f "$pn"
+	elif test -d "$pn"; then
+	    echo "\$ rmdir $pn"; rmdir "$pn"
+	elif test -e "$pn"; then
+	    echo "\$ rm -f $pn"; rm -f "$pn"
 	fi
     done
 }

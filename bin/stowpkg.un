@@ -253,15 +253,15 @@ stowpkg_verify() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_revokable([STOWABLE])
-##				Ensure that STOWABLE package is revokable
+##  stowpkg_revocable([STOWABLE])
+##				Ensure that STOWABLE package is revocable
 ##
 ##  Non-local variables:
 ##	- action	(R) ~~~~
 ##	- stowdir	(R) Stow directory STOWABLE had been deployed in
 ##	- target	(R) Target directory STOWABLE was built for
 ##----------------------------------------------------------------------------
-stowpkg_revokable() {
+stowpkg_revocable() {
     local sppn="${1:-$0}" spbn spsn ifs lpn rpn nl='
 '
     spbn=${sppn##*/}; spsn=${spbn%.stow}
@@ -557,7 +557,7 @@ stowpkg_revoke() {
 		echo "$command $action: $stowdir: No such directory!" >&2
 		return 1
 	    }
-	    stowpkg_revokable ${1+"$@"} || return 1
+	    stowpkg_revocable ${1+"$@"} || return 1
 	    ;;
 	*)  echo "$command $action: No stow directory given!" >&2
 	    return 1

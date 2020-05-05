@@ -648,9 +648,6 @@ EOF
 	_info)		cat <<EOF
 Usage: $command $* [STOWABLE]
 	(Self-)show stowable package information.
-
-Valid options are:
- -v, --verbose		Be verbose
 EOF
 	    ;;
 	_list)		cat <<EOF
@@ -658,7 +655,7 @@ Usage: $command [OPTION ...] $* [STOWABLE]
 	(Self-)list stowable package contents.
 
 Valid options are:
- -v, --verbose		Be verbose
+ -v, --verbose		Show detailed listing
 EOF
 	    ;;
 	_deploy)	cat <<EOF
@@ -668,6 +665,7 @@ Usage: $command [OPTION ...] $* [STOWABLE]
 Valid options are:
  -d, --dir, --stow-dir=STOWDIR
 			Use STOW DIRectory
+ -v, --verbose		Be verbose
 EOF
 	    ;;
 	_revoke)	cat <<EOF

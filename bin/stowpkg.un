@@ -552,7 +552,8 @@ stowpkg_deploy() {
 ##	- verbose	(R) ~~~~
 ##----------------------------------------------------------------------------
 stowpkg_revoke() {
-    local sx='1,/^'"$data_head"'$/d' rn pn ECHO ds='$'
+    local sx='1,/^'"$data_head"'$/d' ifs rn pn ECHO ds='$' nl='
+'
 
     test -n "${stowdir-}" || {
 	echo "$command $action: No stow directory given!" >&2
@@ -570,8 +571,10 @@ stowpkg_revoke() {
 	*)  ECHO=:	;;
     esac
 
-    sed "$sx" "${1:-$0}" | stowpkg_decode | stowpkg_inflate |
-	verbose=n stowpkg_extract list 2>/dev/null | sort -ru | while read rn; do
+    ifs=$IFS; ifs=$nl; set shiftee `
+	sed "$sx" "${1:-$0}" | stowpkg_decode | stowpkg_inflate |
+	    verbose=n stowpkg_extract list 2>/dev/null | sort -ru
+    `; shift; IFS=$ifs; for rn in ${1+"$@"}; do
 	pn=$stowdir/$rn
 	if test -h "$pn"; then
 	    $ECHO "$ds rm -f $pn"; rm -f "$pn"

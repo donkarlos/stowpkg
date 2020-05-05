@@ -565,7 +565,8 @@ stowpkg_revoke() {
     }
 
     stowpkg_verify "${1:-$0}" && stowpkg_revocable "${1:-$0}" || return 1
-
+					## Give up unless STOWABLE passes ver-
+					## ification and revocability check.
     case ${verbose-n} in
 	y)  ECHO=echo	;;
 	*)  ECHO=:	;;
@@ -575,8 +576,10 @@ stowpkg_revoke() {
 	sed "$sx" "${1:-$0}" | stowpkg_decode | stowpkg_inflate |
 	    verbose=n stowpkg_extract list 2>/dev/null | sort -ru
     `; shift; IFS=$ifs; for rn in ${1+"$@"}; do
-	pn=$stowdir/$rn
-	if test -h "$pn"; then
+					## Foreach stow directory-relative
+					## pathname in STOWABLE do...
+	pn=$stowdir/$rn			## Derive absolute pathname and try to
+	if test -h "$pn"; then		## remove it.
 	    $ECHO "$ds rm -f $pn"; rm -f "$pn"
 	elif test -d "$pn"; then
 	    $ECHO "$ds rmdir $pn"; rmdir "$pn"

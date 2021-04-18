@@ -37,7 +37,7 @@ info_head='#-vvvv-INFO-vvvv-#'		## Define info and data section heads.
 data_head='#-vvvv-DATA-vvvv-#'
 readonly snip_head snip_tail info_head data_head
 
-unset GETOPT_COMPATIBLE			## Make getopt(1) behave.
+unset GETOPT_COMPATIBLE POSIXLY_CORRECT	## Make getopt(1) behave.
 unset GREP_OPTIONS GREP_COLOR GREP_COLORS
 					## Make the grep(1)s behave.
 

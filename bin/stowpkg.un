@@ -43,6 +43,7 @@ readonly snip_head snip_tail info_head data_head
 unset TRACE stowdir compression; verbose=n archiver=cpio compressor=xz
 encoder=base64 target=@prefix@ hostarch=`uname -s`.`uname -m`
 arch=$hostarch; readonly hostarch	## Provide sane defaults.
+stowpkg_0tag=:0; readonly stowpkg_0tag	## Preset cleanup tag.
 
 #-vvvv--8><-vvvv-#
 ##----------------------------------------------------------------------------
@@ -51,7 +52,7 @@ arch=$hostarch; readonly hostarch	## Provide sane defaults.
 stowpkg_atload() {
     case $1 in				## Which library was just loaded?
 	safe)				## libsafe.sh...
-	    safe_init :0		## Define cleanup tag.
+	    safe_init "$stowpkg_0tag"		## Define cleanup tag.
 	    ;;
     esac
 }
@@ -448,9 +449,9 @@ stowpkg_build() {
 	safe_mktmpdir builddir _build && safe_mktmpdir destdir _dest &&
     if test -f config.status; then
 	mv config.status "$tmpdir" &&
-	    undo_push :0 mv "$tmpdir"/config.status "$srcdir"
+	    undo_push "$stowpkg_0tag" mv "$tmpdir"/config.status "$srcdir"
     else
-	undo_push 'rm -f' "$srcdir"/config.status
+	undo_push "$stowpkg_0tag" 'rm -f' "$srcdir"/config.status
     fi || {
 	echo "$command $action: Couldn${SQ}t prepare source for building!" >&2
 	return 1

@@ -29,6 +29,9 @@
 LC_ALL=C; export LC_ALL			## Avoid locale insanities.
 command=`basename "$0"`; readonly command
 					## Determine command name.
+unset GETOPT_COMPATIBLE POSIXLY_CORRECT GREP_OPTIONS GREP_COLOR GREP_COLORS
+					## Make getopt(1) and the grep(1)s
+					## behave.
 #-vvvv--8><-vvvv-#
 snip_head='#-vvvv--8><-vvvv-#'		## Define snip head and tail.
 snip_tail='#-^^^^--8><-^^^^-#'
@@ -36,10 +39,6 @@ snip_tail='#-^^^^--8><-^^^^-#'
 info_head='#-vvvv-INFO-vvvv-#'		## Define info and data section heads.
 data_head='#-vvvv-DATA-vvvv-#'
 readonly snip_head snip_tail info_head data_head
-
-unset GETOPT_COMPATIBLE POSIXLY_CORRECT	## Make getopt(1) behave.
-unset GREP_OPTIONS GREP_COLOR GREP_COLORS
-					## Make the grep(1)s behave.
 
 unset TRACE stowdir compression; verbose=n archiver=cpio compressor=xz
 encoder=base64 target=@prefix@ hostarch=`uname -s`.`uname -m`

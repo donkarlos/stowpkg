@@ -1,7 +1,7 @@
 ##								-*-Makefile-*-
 ##  Makefile.am			- stowpkg `Makefile.in' template
 ##
-##  Copyright (C) 2020 Das Computerlabor (DCl-M)
+##  Copyright © 2020-2021 Das Computerlabor (DCl-M)
 ##
 ##  This program is free software; you can redistribute it and/or modify
 ##  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 ##  AUTHOR(S):	ks	Karl Schmitz <carolus.faber@gmail.com>
 ##
 ##  WRITTEN BY:	ks	2020-05-03
-##  CHANGED BY:
+##  CHANGED BY:	ks	2021-04-18	UTF-8ize copyright notice.
 ##
 ##  NOTE:   (1)	Update the build system with autoreconf(1).
 ##----------------------------------------------------------------------------

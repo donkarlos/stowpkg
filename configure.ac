@@ -31,7 +31,7 @@ dnl
 dnl Initialization:
 dnl
 AC_INIT([Build and manage self-deploying stowable packages],
-    [0.3~0], [carolus.faber@gmail.com], [stowpkg])
+    [0.3~1], [carolus.faber@gmail.com], [stowpkg])
 AC_PREREQ([2.61])
 AC_CONFIG_SRCDIR([bin/stowpkg.un])
 AC_CONFIG_AUX_DIR([auto])

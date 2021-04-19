@@ -449,7 +449,7 @@ stowpkg_build() {
 	safe_mktmpdir builddir _build && safe_mktmpdir destdir _dest &&
     if test -f config.status; then
 	mv config.status "$tmpdir" &&
-	    undo_push "$stowpkg_0tag" mv "$tmpdir"/config.status "$srcdir"
+	    undo_push "$stowpkg_0tag" 'mv -f' "$tmpdir"/config.status "$srcdir"
     else
 	undo_push "$stowpkg_0tag" 'rm -f' "$srcdir"/config.status
     fi || {

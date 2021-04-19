@@ -425,13 +425,13 @@ stowpkg_build() {
 	    ;;
     esac
 
-    stowpkg_programs mktemp sed make &&
-	stowpkg_program "$archiver" archiver &&
-	stowpkg_program "$compressor" compressor &&
-	stowpkg_program "$encoder" encoder &&
-	stowpkg_archive supported &&
-	stowpkg_deflate supported &&
-	stowpkg_encode supported || return $?
+    stowpkg_programs mktemp sed make					&&
+    stowpkg_program "$archiver" archiver				&&
+    stowpkg_program "$compressor" compressor				&&
+    stowpkg_program "$encoder" encoder					&&
+    stowpkg_archive supported						&&
+    stowpkg_deflate supported						&&
+    stowpkg_encode supported || return $?
 					## Ensure that requisite programs,
 					## elected archiver, compressor, and
 					## encoder are present and supported.
@@ -445,11 +445,11 @@ stowpkg_build() {
     local srcdir="`/bin/pwd`" tmpdir builddir destdir package version	\
 	PACKAGE_TARNAME PACKAGE_VERSION PACKAGE VERSION spsn spbn
 
-    dl_load safe && safe_mktmpdir tmpdir &&
-	safe_mktmpdir builddir _build && safe_mktmpdir destdir _dest &&
+    dl_load safe && safe_mktmpdir tmpdir				&&
+    safe_mktmpdir builddir _build && safe_mktmpdir destdir _dest	&&
     if test -f config.status; then
-	mv config.status "$tmpdir" &&
-	    undo_push "$stowpkg_0tag" 'mv -f' "$tmpdir"/config.status "$srcdir"
+	mv config.status "$tmpdir"					&&
+	undo_push "$stowpkg_0tag" 'mv -f' "$tmpdir"/config.status "$srcdir"
     else
 	undo_push "$stowpkg_0tag" 'rm -f' "$srcdir"/config.status
     fi || {

@@ -17,7 +17,7 @@
 ##  with this program; if not, write to the Free Software Foundation, Inc.,
 ##  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 ##
-##  AUTHOR(S):	ks	Karl Schmitz <carolus.faber@gmail.com>
+##  AUTHOR(S):	ks	Karl Schmitz <ks@computerlabor.org>
 ##
 ##  WRITTEN BY:	ks	2020-05-03
 ##  CHANGED BY:	ks	2021-04-18	UTF-8ize copyright notice.

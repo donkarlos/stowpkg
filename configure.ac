@@ -17,7 +17,7 @@ dnl You should have received a copy of the GNU General Public License along
 dnl with this program; if not, write to the Free Software Foundation, Inc.,
 dnl 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 dnl
-dnl AUTHOR(S):	ks	Karl Schmitz <carolus.faber@gmail.com>
+dnl AUTHOR(S):	ks	Karl Schmitz <ks@computerlabor.org>
 dnl
 dnl WRITTEN BY:	ks	2020-05-03
 dnl CHANGED BY:	ks	2020-05-05	Release 0.2.
@@ -32,7 +32,7 @@ dnl
 dnl Initialization:
 dnl
 AC_INIT([Build and manage self-deploying stowable packages],
-    [0.3~1], [carolus.faber@gmail.com], [stowpkg])
+    [0.3~1], [ks+stowpkg@computerlabor.org], [stowpkg])
 AC_PREREQ([2.61])
 AC_CONFIG_SRCDIR([bin/stowpkg.un])
 AC_CONFIG_AUX_DIR([auto])

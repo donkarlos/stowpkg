@@ -23,6 +23,7 @@
 ##
 ##  WRITTEN BY:	ks	2020-05-03
 ##  CHANGED BY:	ks	2021-04-18	UTF-8ize copyright notice.
+##		ks	2022-12-01	UTF-8ize ellipses.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -51,7 +52,7 @@ stowpkg_0tag=:0; readonly stowpkg_0tag	## Preset cleanup tag.
 ##----------------------------------------------------------------------------
 stowpkg_atload() {
     case $1 in				## Which library was just loaded?
-	safe)				## libsafe.sh...
+	safe)				## »libsafe.sh«…
 	    safe_init "$stowpkg_0tag"		## Define cleanup tag.
 	    ;;
     esac
@@ -86,7 +87,7 @@ stowpkg_program() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_programs(PROGRAM ...)
+##  stowpkg_programs(PROGRAM …)
 ##				Ensure that all PROGRAMs are present
 ##----------------------------------------------------------------------------
 stowpkg_programs() {
@@ -226,7 +227,7 @@ stowpkg_verify() {
     }
 
     for info in archiver compressor encoder arch target; do
-	eval 'case ${'"$info"':+=} in	## Foreach required package info do...
+	eval 'case ${'"$info"':+=} in	## Foreach required package info do…
 	    =)		;;		## INFO section has it?
 	    *)	status=1;;		## No, assume failure.
 	esac'
@@ -369,7 +370,7 @@ stowpkg_encode() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_getvars(MAKEFILE [&VARIABLE ...])
+##  stowpkg_getvars(MAKEFILE [&VARIABLE …])
 ##				Pick VARIABLE assignments from MAKEFILE and
 ##				convert them into POSIX shell syntax
 ##----------------------------------------------------------------------------
@@ -383,7 +384,7 @@ stowpkg_getvars() {
 		*)  return 1		;;
 	    esac; sx='y/	/ /;s/   */ /g;s/^ //;s/ $//'
 					## Have sed(1) Compress whitespace.
-	    for n in "$@"; do		## Foreach VARIABLE do...
+	    for n in "$@"; do		## Foreach VARIABLE do…
 		expr "_$n" : "_$re$DS" >/dev/null &&
 		    sx="$sx$NL"'/^\('"$n"'\) *= */bp'
 	    done			## Append sed(1) statements to pick
@@ -441,7 +442,7 @@ stowpkg_build() {
 	return 1			## Complain and abort unless configure
     }					## script exists.
 
-    echo "$command $action: Prepare source..."
+    echo "$command $action: Prepare source…"
     local srcdir="`/bin/pwd`" tmpdir builddir destdir package version	\
 	PACKAGE_TARNAME PACKAGE_VERSION PACKAGE VERSION spsn spbn
 
@@ -457,7 +458,7 @@ stowpkg_build() {
 	return 1
     }
 
-    echo "$command $action: Configure source..."
+    echo "$command $action: Configure source…"
     (cd "$builddir" && "$srcdir"/configure --prefix="$target") || {
 	echo "$command $action: Couldn${SQ}t configure source!" >&2
 	return 1
@@ -475,19 +476,19 @@ stowpkg_build() {
 	    ;;
     esac; spsn=$package${version:+_$version}; spbn=${spsn}_$arch.stow
 
-    echo "$command $action: Build $spsn..."
+    echo "$command $action: Build $spsn…"
     (cd "$builddir" && make) || {
 	echo "$command $action: Couldn${SQ}t build $spsn!" >&2
 	return 1
     }
 
-    echo "$command $action: Install $spsn..."
+    echo "$command $action: Install $spsn…"
     (cd "$builddir" && make DESTDIR="$destdir" prefix="/$spsn" install) || {
 	echo "$command $action: Couldn${SQ}t install $spsn!" >&2
 	return 1
     }
 
-    echo "$command $action: Assemble $spbn..."
+    echo "$command $action: Assemble $spbn…"
     undo_push 'rm -f' "$spbn"
     (cd "$destdir" && find "$spsn" | sort -u | stowpkg_archive) |
 	stowpkg_deflate | stowpkg_encode | sed '
@@ -588,7 +589,7 @@ stowpkg_revoke() {
 	    verbose=n stowpkg_extract list 2>/dev/null | sort -ru
     `; shift; IFS=$ifs; for rn in ${1+"$@"}; do
 					## Foreach stow directory-relative
-					## pathname in STOWABLE do...
+					## pathname in STOWABLE do…
 	pn=$stowdir/$rn			## Derive absolute pathname and try to
 	if test -h "$pn"; then		## remove it.
 	    $ECHO "$ds rm -f $pn"; rm -f "$pn"
@@ -631,7 +632,7 @@ Usage: $command $*
 EOF
 	    ;;
 	_build)		cat <<EOF
-Usage: $command [OPTION ...] $* [PACKAGE [VERSION]]
+Usage: $command [OPTION …] $* [PACKAGE [VERSION]]
 	Build stowable package.
 
 Valid options are:
@@ -662,7 +663,7 @@ Usage: $command $* [STOWABLE]
 EOF
 	    ;;
 	_list)		cat <<EOF
-Usage: $command [OPTION ...] $* [STOWABLE]
+Usage: $command [OPTION …] $* [STOWABLE]
 	(Self-)list stowable package contents.
 
 Valid options are:
@@ -670,7 +671,7 @@ Valid options are:
 EOF
 	    ;;
 	_deploy)	cat <<EOF
-Usage: $command [OPTION ...] $* [STOWABLE]
+Usage: $command [OPTION …] $* [STOWABLE]
 	(Self-)deploy stowable package into stow directory.
 
 Valid options are:
@@ -680,7 +681,7 @@ Valid options are:
 EOF
 	    ;;
 	_revoke)	cat <<EOF
-Usage: $command [OPTION ...] $* [STOWABLE]
+Usage: $command [OPTION …] $* [STOWABLE]
 	(Self-)revoke stowable package from stow directory.
 
 Valid options are:
@@ -690,7 +691,7 @@ Valid options are:
 EOF
 	    ;;
 	*)		cat <<EOF
-Usage: $command [OPTION ...] ACTION [ARGUMENT ...]
+Usage: $command [OPTION …] ACTION [ARGUMENT …]
 
 Possible actions are:`echo ":-:$suffixes" | sed 's/:-:/\n  */g;y/_:/ ,/'`
 Try ${QB-$qb}$command help ACTION${QE-$qe} for details.
@@ -742,7 +743,7 @@ args=`getopt -o"$optstring" -l"$longopts" -- ${1+"$@"}` || {
     stowpkg_help >&2; exit 2
 }
 eval set shiftee "$args"; unset optstring longopts args
-while shift; do				## Process parsed options...
+while shift; do				## Process parsed options…
     case $1 in
 	--trace)	TRACE='set -x'		;;
 	-h|--help)	stowpkg_help; exit 0	;;
@@ -788,7 +789,7 @@ esac; case ${suffixes:+=} in
     =)	;;
     *)	echo "$command: Ran out of actions!" >&2
 	exit 2
-esac; suffix=; while test $# -gt 0; do	## Extend suffix...
+esac; suffix=; while test $# -gt 0; do	## Extend suffix…
     suffix=${suffix}_$1; shift
     case :$suffixes: in
 	*:${suffix}_*)	;;
@@ -797,9 +798,9 @@ esac; suffix=; while test $# -gt 0; do	## Extend suffix...
 done
 
 case :$suffixes: in			## Extended suffix recognized?
-    *:${suffix}:*)			## Yes, derive...
+    *:${suffix}:*)			## Yes, derive…
 	action=`echo "$suffix" | sed 's/^_//;y/_/ /'`
-	stowpkg$suffix ${1+"$@"}	## ...and perform action
+	stowpkg$suffix ${1+"$@"}	## …and perform action
 	;;
     *)	stowpkg_help >&2; exit 2	## No, show general help and
 	;;				## indicate usage error.

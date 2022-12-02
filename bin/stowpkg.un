@@ -32,6 +32,8 @@
 ##					0tag« instead of obsolete safe_init().
 ##					Avoid to patch snip_{head,tail} read-
 ##					only declaration.
+##					Prefer $dl_re_id to ancient $dl_re_id-
+##					ent.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -382,19 +384,20 @@ stowpkg_encode() {
 ##  stowpkg_getvars(MAKEFILE [&VARIABLE …])
 ##				Pick VARIABLE assignments from MAKEFILE and
 ##				convert them into POSIX shell syntax
+##
+##  Non-local variables:
+##	• dl_re_id	(R) BRE matching an identifier
+##	• dl_re_ident	(R) Ancient name for the above
+##	• &VARIABLE	(W) Picked VARIABLE
 ##----------------------------------------------------------------------------
 stowpkg_getvars() {
-    local mfpn="$1" re sx n; shift	## Fetch MAKEFILE's pathname.
+    local mfpn="$1" sx n; shift	## Fetch MAKEFILE's pathname.
 
     case ${1+=} in
-	=)  case ${dl_re_id+i}${dl_re_ident+I} in
-		i*) re=$dl_re_id	;;
-		I)  re=$dl_re_ident	;;
-		*)  return 1		;;
-	    esac; sx='y/	/ /;s/   */ /g;s/^ //;s/ $//'
-					## Have sed(1) Compress whitespace.
+	=)  sx='y/	/ /;s/   */ /g;s/^ //;s/ $//'
+					## Have sed(1) compress whitespace.
 	    for n in "$@"; do		## Foreach VARIABLE do…
-		expr "_$n" : "_$re$DS" >/dev/null &&
+		expr "_$n" : "_${dl_re_id-${dl_re_ident?}}$DS" >/dev/null &&
 		    sx="$sx$NL"'/^\('"$n"'\) *= */bp'
 	    done			## Append sed(1) statements to pick
 					## VARIABLE unless it has an invalid

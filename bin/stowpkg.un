@@ -25,6 +25,7 @@
 ##  CHANGED BY:	ks	2021-04-18	UTF-8ize copyright notice.
 ##		ks	2022-12-01	UTF-8ize ellipses.
 ##		ks	2022-12-02	Use UTF-8 bullets in list items.
+##					Entirely silence initial »getopt -T«.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -726,7 +727,7 @@ EOF
 ##----------------------------------------------------------------------------
 ##  Main program:
 ##----------------------------------------------------------------------------
-getopt -T >/dev/null 2>&1 && {
+(getopt -T) >/dev/null 2>&1 && {
     echo "$command: Legacy getopt(1) found!" >&2; exit 1
 } || case $? in
     4)	optstring=hvA:jJzZI:123456789E:a:d:t:

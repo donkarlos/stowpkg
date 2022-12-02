@@ -30,6 +30,8 @@
 ##					files to positional parameters.
 ##					Define cleanup tag with »safe_meta set
 ##					0tag« instead of obsolete safe_init().
+##					Avoid to patch snip_{head,tail} read-
+##					only declaration.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -42,10 +44,11 @@ unset GETOPT_COMPATIBLE POSIXLY_CORRECT GREP_OPTIONS GREP_COLOR GREP_COLORS
 #-vvvv--8><-vvvv-#
 snip_head='#-vvvv--8><-vvvv-#'		## Define snip head and tail.
 snip_tail='#-^^^^--8><-^^^^-#'
+readonly snip_head snip_tail
 #-^^^^--8><-^^^^-#
 info_head='#-vvvv-INFO-vvvv-#'		## Define info and data section heads.
 data_head='#-vvvv-DATA-vvvv-#'
-readonly snip_head snip_tail info_head data_head
+readonly info_head data_head
 
 unset TRACE stowdir compression; verbose=n archiver=cpio compressor=xz
 encoder=base64 target=@prefix@ hostarch=`uname -s`.`uname -m`
@@ -498,8 +501,7 @@ stowpkg_build() {
     undo_push 'rm -f' "$spbn"
     (cd "$destdir" && find "$spsn" | sort -u | stowpkg_archive) |
 	stowpkg_deflate | stowpkg_encode | sed '
-/^readonly /s/snip_[^ ]* //g;/Build and m/s//M/
-/^'"$snip_head"'$/,/^'"$snip_tail"'$/d;/^'"$info_head"'$/a\
+/Build and m/s//M/;/^'"$snip_head"'$/,/^'"$snip_tail"'$/d;/^'"$info_head"'$/a\
 encoder='"`   quote_sh "${encoder##*/}"   `"'\
 compressor='"`quote_sh "${compressor##*/}"`"'\
 archiver='"`  quote_sh "${archiver##*/}"  `"'\

@@ -73,7 +73,7 @@ stowpkg_atload() {
 
 #-^^^^--8><-^^^^-#
 ##----------------------------------------------------------------------------
-##  stowpkg_program(PROGRAM [&CATEGORY])
+##  stowpkg_program(PROGRAM [&CATEGORY=program])
 ##				Ensure that PROGRAM (in CATEGORY) is present
 ##
 ##  Non-local variables:
@@ -725,7 +725,7 @@ EOF
 stowpkg_version() {
     cat <<EOF
 $command (@PACKAGE_NAME@) @PACKAGE_VERSION@
-Copyright © 2020 Das Computerlabor
+Copyright © 2020-2022 Das Computerlabor (DCl-M)
 License GPLv2: GNU GPL version 2 or later
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.

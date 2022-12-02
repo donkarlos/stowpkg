@@ -26,6 +26,8 @@
 ##		ks	2022-12-01	UTF-8ize ellipses.
 ##		ks	2022-12-02	Use UTF-8 bullets in list items.
 ##					Entirely silence initial »getopt -T«.
+##					Prepend options from stow(1) resource
+##					files to positional parameters.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -741,6 +743,10 @@ EOF
 	exit 1
 	;;
 esac
+eval set shiftee `
+    cat .stowrc "$HOME"/.stowrc 2>/dev/null || :
+` ${1+"$@"}; shift			## Prepend options from stow(1) re-
+					## source files to pos. paramaters.
 args=`getopt -o"$optstring" -l"$longopts" -- ${1+"$@"}` || {
     stowpkg_help >&2; exit 2
 }

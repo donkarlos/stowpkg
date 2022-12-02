@@ -28,6 +28,8 @@
 ##					Entirely silence initial »getopt -T«.
 ##					Prepend options from stow(1) resource
 ##					files to positional parameters.
+##					Define cleanup tag with »safe_meta set
+##					0tag« instead of obsolete safe_init().
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -57,8 +59,8 @@ stowpkg_0tag=:0; readonly stowpkg_0tag	## Preset cleanup tag.
 stowpkg_atload() {
     case $1 in				## Which library was just loaded?
 	safe)				## »libsafe.sh«…
-	    safe_init "$stowpkg_0tag"		## Define cleanup tag.
-	    ;;
+	    safe_meta set 0tag "$stowpkg_0tag"
+	    ;;				## Define cleanup tag.
     esac
 }
 

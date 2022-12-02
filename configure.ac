@@ -1,7 +1,7 @@
 dnl								-*-Autoconf-*-
 dnl configure.ac		- stowpkg Autotools configuration
 dnl
-dnl Copyright © 2020-2021 Das Computerlabor (DCl-M)
+dnl Copyright © 2020-2022 Das Computerlabor (DCl-M)
 dnl
 dnl This program is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ dnl
 dnl WRITTEN BY:	ks	2020-05-03
 dnl CHANGED BY:	ks	2020-05-05	Release 0.2.
 dnl			2021-04-18	UTF-8ize copyright notice.
+dnl			2021-04-20	Intermediate release 0.3~1.
 dnl
 dnl NOTE:   (1)	Update the build system with autoreconf(1).
 dnl	    (2)	AM_INIT_AUTOMAKE() already invokes AC_ARG_PROGRAM, AC_PROG_-

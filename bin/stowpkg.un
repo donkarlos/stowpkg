@@ -39,6 +39,8 @@
 ##		ks	2022-12-03	Invoke getopt(1) on behalf of stowpkg.
 ##					Implement option »--cpio«.
 ##					Implement option »-V|--version«.
+##					stowpkg_{archive,extract}(): Cope with
+##					»v« being unset.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -180,7 +182,7 @@ stowpkg_inflate() {
 ##	• verbose	(R) Specifies if extraction should be verbose
 ##----------------------------------------------------------------------------
 stowpkg_extract() {
-    local v=
+    local v
     case ${verbose:-n} in
 	y)  v=v	;;
     esac; case ${archiver:=unknown}${1+:$1} in
@@ -192,16 +194,16 @@ stowpkg_extract() {
 	    return 1
 	    ;;
 	*/cpio:list)
-	    "$archiver" -t$v
+	    "$archiver" -t${v-}
 	    ;;
 	*/cpio)
-	    "$archiver" -i${v}dmu --no-preserve-owner
+	    "$archiver" -i${v-}dmu --no-preserve-owner
 	    ;;
 	*/tar:list)
-	    "$archiver" -t${v}f -
+	    "$archiver" -t${v-}f -
 	    ;;
 	*/tar)
-	    "$archiver" -x${v}f - --no-same-owner
+	    "$archiver" -x${v-}f - --no-same-owner
 	    ;;
 	*)  cat >/dev/null
 	    ;;
@@ -307,7 +309,7 @@ stowpkg_revocable() {
 ##	• verbose	(R) Specifies if archival should be verbose
 ##----------------------------------------------------------------------------
 stowpkg_archive() {
-    local v=
+    local v
     case ${verbose:-n} in
 	y)  v=v	;;
     esac; case ${archiver:=unknown}${1+:$1} in
@@ -319,10 +321,10 @@ stowpkg_archive() {
 	    return 1
 	    ;;
 	*/cpio)
-	    cpio -o$v
+	    cpio -o${v-}
 	    ;;
 	*/tar)
-	    tar --no-recursion --verbatim-files-from -T - -c${v}f -
+	    tar --no-recursion --verbatim-files-from -T - -c${v-}f -
 	    ;;
 	*)  cat >/dev/null		## Consume pathname list, leaving
 	    ;;				## stdin at EOF.

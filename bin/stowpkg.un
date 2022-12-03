@@ -36,6 +36,7 @@
 ##					ent.
 ##					stowpkg_help(): Quote with UTF-8 dou-
 ##					ble angled quotes.
+##		ks	2022-12-03	Invoke getopt(1) on behalf of stowpkg.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -756,7 +757,7 @@ eval set shiftee `
     cat .stowrc "$HOME"/.stowrc 2>/dev/null || :
 ` ${1+"$@"}; shift			## Prepend options from stow(1) re-
 					## source files to pos. paramaters.
-args=`getopt -o"$optstring" -l"$longopts" -- ${1+"$@"}` || {
+args=`getopt -n"$command" -o"$optstring" -l"$longopts" -- ${1+"$@"}` || {
     stowpkg_help >&2; exit 2
 }
 eval set shiftee "$args"; unset optstring longopts args

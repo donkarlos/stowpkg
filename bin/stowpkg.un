@@ -153,15 +153,15 @@ stowpkg_decode() {
 ##----------------------------------------------------------------------------
 stowpkg_inflate() {
     case ${compressor:=unknown}${1+:$1} in
-	*/bzip2:supported|*/xz:supported|*/lz[io]p:supported|		\
-	*/lzma:supported|*/gzip:supported|*/compress:supported)
+	*/lz[io]p:supported|*/xz:supported|*/lzma:supported|		\
+	*/bzip2:supported|*/gzip:supported|*/compress:supported)
 	    return 0
 	    ;;
 	*:supported)
 	    echo "$command $action: Compressor $compressor not supported!" >&2
 	    return 1
 	    ;;
-	*/bzip2|*/xz|*/lz[io]p|*/lzma|*/gzip|*/compress)
+	*/lz[io]p|*/xz|*/lzma|*/bzip2|*/gzip|*/compress)
 	    "$compressor" -dc
 	    ;;
 	*)  cat
@@ -344,15 +344,15 @@ stowpkg_archive() {
 ##----------------------------------------------------------------------------
 stowpkg_deflate() {
     case ${compressor:=unknown}${1+:$1} in
-	*/bzip2:supported|*/xz:supported|*/lz[io]p:supported|		\
-	*/lzma:supported|*/gzip:supported|*/compress:supported)
+	*/lz[io]p:supported|*/xz:supported|*/lzma:supported|		\
+	*/bzip2:supported|*/gzip:supported|*/compress:supported)
 	    return 0
 	    ;;
 	*:supported)
 	    echo "$command $action: Compressor $compressor not supported!" >&2
 	    return 1
 	    ;;
-	*/bzip2|*/xz|*/lz[io]p|*/lzma|*/gzip|*/compress)
+	*/lz[io]p|*/xz|*/lzma|*/bzip2|*/gzip|*/compress)
 	    "$compressor" -z${compression-}
 	    ;;
 	*)  cat
@@ -661,11 +661,11 @@ Valid options are:
      --tar		Build archive with tar(1)
  -A, --use-archiver, --use-archive-program=ARCHIVER
 			Build archive with ARCHIVER (default: $archiver)
- -j, --bzip2		Compress with bzip2(1)
- -J, --xz		Compress with xz(1)
      --lzip		Compress with lzip(1)
-     --lzma		Compress with lzma(1)
      --lzop		Compress with lzop(1)
+ -J, --xz		Compress with xz(1)
+     --lzma		Compress with lzma(1)
+ -j, --bzip2		Compress with bzip2(1)
  -z, --gzip		Compress with gzip(1)
  -Z, --compress		Compress with compress(1)
  -I, --use-compressor, --use-compress-program=COMPRESSOR
@@ -750,7 +750,7 @@ EOF
 } || case $? in
     4)	optstring=hVvA:JjzZI:123456789E:a:d:t:
 	longopts=trace,help,version,verbose,use-archiver:,use-archive-program:
-	longopts=$longopts,cpio,tar,bzip2,xz,lzip,lzma,lzop,gzip,compress
+	longopts=$longopts,cpio,tar,lzip,lzop,xz,lzma,bzip2,gzip,compress
 	longopts=$longopts,use-compressor:,use-compress-program:
 	longopts=$longopts,fast,best,use-encoder:,use-encode-program:
 	longopts=$longopts,arch:,dir:,stow-dir:,target:
@@ -777,12 +777,12 @@ while shift; do				## Process parsed options…
 			archiver=${1#--}	;;
 	-A|--use-archiver|--use-archive-program)
 			shift; archiver=$1	;;
-	-j|--bzip2)	compressor=bzip2	;;
-	-J|--xz)	compressor=xz		;;
-	   --lz[io]p|--lzma)
+	   --lz[io]p|--xz|--lzma|--bzip2|--gzip|--compress)
 			compressor=${1#--}	;;
-	-z|--gzip)	compressor=gzip		;;
-	-Z|--compress)	compressor=compress	;;
+	-J)		compressor=xz		;;
+	-j)		compressor=bzip2	;;
+	-z)		compressor=gzip		;;
+	-Z)		compressor=compress	;;
 	-I|--use-compressor|--use-compress-program)
 			shift; compressor=$1	;;
 	-1|--fast)	compression=1		;;

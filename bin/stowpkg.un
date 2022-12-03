@@ -37,6 +37,7 @@
 ##					stowpkg_help(): Quote with UTF-8 dou-
 ##					ble angled quotes.
 ##		ks	2022-12-03	Invoke getopt(1) on behalf of stowpkg.
+##					Implement option »--cpio«.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -653,9 +654,10 @@ Valid options are:
  -a, --arch=ARCH	Build for ARCHitecture (default: $hostarch)
  -t, --target=TARGET	Build for TARGET directory (default: $target)
  -v, --verbose		Be verbose
-     --tar		Create archive with tar(1)
+     --cpio		Build archive with cpio(1)
+     --tar		Build archive with tar(1)
  -A, --use-archiver, --use-archive-program=ARCHIVER
-			Create archive with ARCHIVER (default: $archiver)
+			Build archive with ARCHIVER (default: $archiver)
  -j, --bzip2		Compress with bzip2(1)
  -J, --xz		Compress with xz(1)
      --lzip		Compress with lzip(1)
@@ -743,8 +745,8 @@ EOF
     echo "$command: Legacy getopt(1) found!" >&2; exit 1
 } || case $? in
     4)	optstring=hvA:jJzZI:123456789E:a:d:t:
-	longopts=trace,help,verbose,tar,use-archiver:,use-archive-program:
-	longopts=$longopts,bzip2,xz,lzip,lzma,lzop,gzip,compress
+	longopts=trace,help,verbose,use-archiver:,use-archive-program:
+	longopts=$longopts,cpio,tar,bzip2,xz,lzip,lzma,lzop,gzip,compress
 	longopts=$longopts,use-compressor:,use-compress-program:
 	longopts=$longopts,fast,best,use-encoder:,use-encode-program:
 	longopts=$longopts,arch:,dir:,stow-dir:,target:
@@ -766,7 +768,8 @@ while shift; do				## Process parsed options…
 	--trace)	TRACE='set -x'		;;
 	-h|--help)	stowpkg_help; exit 0	;;
 	-v|--verbose)	verbose=y		;;
-	   --tar)	archiver=tar		;;
+	   --cpio|--tar)
+			archiver=${1#--}	;;
 	-A|--use-archiver|--use-archive-program)
 			shift; archiver=$1	;;
 	-j|--bzip2)	compressor=bzip2	;;

@@ -38,6 +38,7 @@
 ##					ble angled quotes.
 ##		ks	2022-12-03	Invoke getopt(1) on behalf of stowpkg.
 ##					Implement option »--cpio«.
+##					Implement option »-V|--version«.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -713,7 +714,8 @@ Possible actions are:`echo ":-:$suffixes" | sed 's/:-:/\n  •/g;y/_:/ ,/'`
 Try »$command help ACTION« for details.
 
 Valid OPTIONs are:
- -h, --help		Show help
+ -h, --help		Show usage information
+ -V, --version		Show version and copyright information
 
 EOF
 	    return
@@ -744,8 +746,8 @@ EOF
 (getopt -T) >/dev/null 2>&1 && {
     echo "$command: Legacy getopt(1) found!" >&2; exit 1
 } || case $? in
-    4)	optstring=hvA:jJzZI:123456789E:a:d:t:
-	longopts=trace,help,verbose,use-archiver:,use-archive-program:
+    4)	optstring=hVvA:JjzZI:123456789E:a:d:t:
+	longopts=trace,help,version,verbose,use-archiver:,use-archive-program:
 	longopts=$longopts,cpio,tar,bzip2,xz,lzip,lzma,lzop,gzip,compress
 	longopts=$longopts,use-compressor:,use-compress-program:
 	longopts=$longopts,fast,best,use-encoder:,use-encode-program:
@@ -766,7 +768,8 @@ eval set shiftee "$args"; unset optstring longopts args
 while shift; do				## Process parsed options…
     case $1 in
 	--trace)	TRACE='set -x'		;;
-	-h|--help)	stowpkg_help; exit 0	;;
+	-h|--help)	stowpkg_help;	 exit 0	;;
+	-V|--version)	stowpkg_version; exit 0	;;
 	-v|--verbose)	verbose=y		;;
 	   --cpio|--tar)
 			archiver=${1#--}	;;

@@ -328,8 +328,7 @@ stowpkg_revocable() {
     `; shift; IFS=$ifs; for lpn in ${1+"$@"}; do
 	rpn=`readlink -e "$lpn"` && case $rpn in
 	    $stowdir/$spsn/*)
-		echo "$command $action: $spsn is still installed!" >&2
-		return 1
+		echo "$command $action: $spsn still stowed!" >&2; return 1
 		;;
 	esac
     done; return 0

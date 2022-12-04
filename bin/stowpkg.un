@@ -46,7 +46,8 @@
 ##					compatible.
 ##		ks	2022-12-04	Fix options »-h|--help« and »-V|--ver-
 ##					sion«.
-##					Implement option »-s|--spool-dir=DIR«.
+##					Implement options »-s|--spool-dir=DIR«
+##					and »-o|--out-dir=DIR«
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -65,7 +66,7 @@ info_head='#-vvvv-INFO-vvvv-#'		## Define info and data section heads.
 data_head='#-vvvv-DATA-vvvv-#'
 readonly info_head data_head
 
-unset TRACE verbose target compression group spooldir; stowdir=.
+unset TRACE verbose target compression group spooldir outdir; stowdir=.
 archiver=cpio compressor=xz encoder=base64 hostarch=`uname -s`.`uname -m`
 arch=$hostarch; readonly hostarch	## Provide sane defaults.
 stowpkg_0tag=:0; readonly stowpkg_0tag	## Preset cleanup tag.
@@ -475,6 +476,7 @@ stowpkg_getvars() {
 ##	• arch		(R) Architecture stowable should be built for
 ##	• target	(R) Target directory stowable package is built for
 ##	• spooldir	(R) Spool directory
+##	• outdir	(R) Output directory
 ##	• archiver	(W) Elected archiver's absolute pathname
 ##	• compressor	(W) Elected compressor's absolute pathname
 ##	• encoder	(W) Elected encoder's absolute pathname
@@ -499,14 +501,22 @@ stowpkg_build() {
 					## elected archiver, compressor, and
 					## encoder are present and supported.
     case ${spooldir:+=$spooldir} in	## Spool directory specified?
-	=/*)				## Yes, as absolute pathname…
+	=/*)				## Yes, as an absolute pathname?
 	    test -d "$spooldir" && test -w "$spooldir" || {
+					## Is it writable, too?
 		echo "$command $action: »$spooldir«: No such writable directory!" >&2
-		return 1
+		return 1		## No, complain and indicate failure!
 	    }
 	    ;;
 	=*) echo "$command $action: »$spooldir«: Not an absolute pathname!" >&2
-	    return 1
+	    return 1			## No, complain and indicate failure!
+	    ;;
+    esac; case ${outdir:+=} in		## Output directory specified?
+	=)  test -d "$outdir" && test -w "$outdir" || {
+					## Is it writable, too?
+		echo "$command $action: »$outdir«: No such writable directory!" >&2
+		return 1		## No, complain and indicate failure!
+	    }
 	    ;;
     esac
 
@@ -580,9 +590,10 @@ stowpkg_build() {
 	    fi
 	    ;;
     esac
-    echo "$command $action: Assemble ${spooldir-.}/$spbn…"
-    rm -f "${spooldir-.}/$spbn"		## Remove stowable spooled earlier.
-    undo_push 'rm -f' "${spooldir-.}/$spbn"
+    echo "$command $action: Assemble ${spooldir-${outdir-.}}/$spbn…"
+    rm -f "${outdir-.}/$spbn" "${spooldir-.}/$spbn"
+					## Remove stowable spooled earlier.
+    undo_push rm -f "${outdir-.}/$spbn" "${spooldir-.}/$spbn"
 					## Arrange to remove spooled stowable
 					## on failure.
     for n in encoder compressor compression archiver arch target group; do
@@ -605,9 +616,13 @@ stowpkg_build() {
 	stowpkg_deflate | stowpkg_encode | sed '
 /Build and m/s//M/;/^'"$snip_head"'$/,/^'"$snip_tail"'$/d
 /^'"$info_head"'$/a\
-'"${sx:+$sx$BS$NL}$data_head$NL" "$0" - >${spooldir-.}/$spbn		&&
-    test -s "${spooldir-.}/$spbn"					&&
-    chmod +x${group:+,g+w} "${spooldir-.}/$spbn"
+'"${sx:+$sx$BS$NL}$data_head$NL" "$0" - >${spooldir-${outdir-.}}/$spbn	&&
+    test -s "${spooldir-${outdir-.}}/$spbn"				&&
+    chmod +x${group:+,g+w} "${spooldir-${outdir-.}}/$spbn" 		&&
+    case ${spooldir:+s}${outdir:+o} in
+	so) ln -sf "$spooldir/$spbn" "$outdir"
+	    ;;
+    esac
 }
 
 #-^^^^--8><-^^^^-#
@@ -749,6 +764,7 @@ Valid options are:
  -t, --target=TARGET	Build for deployment in TARGET directory (»${target:-(unset)}«)
  -s, --spool-dir=SPOOLDIR
 			Spool built stowable package to SPOOLDIR (»${spooldir-.}«)
+ -o, --out-dir=OUTDIR	Write built stowable package to OUTDIR (»${outdir-.}«)
      --cpio		Build archive with cpio(1)
      --tar		Build archive with tar(1)
  -A, --use-archiver, --use-archive-program=ARCHIVER
@@ -813,7 +829,6 @@ Valid OPTIONs are:
  -V, --version		Show version and copyright information
 
 EOF
-	    return
 	    ;;
     esac
 }
@@ -844,12 +859,12 @@ EOF
 (getopt -T) >/dev/null 2>&1 && {
     echo "$command: Legacy getopt(1) found!" >&2; exit 1
 } || case $? in
-    4)	optstring=hVvA:JjzZI:123456789E:a:d:t:g:s:
+    4)	optstring=hVvA:JjzZI:123456789E:a:d:t:g:s:o:
 	longopts=trace,help,version,verbose,use-archiver:,use-archive-program:
 	longopts=$longopts,cpio,tar,lzip,lzop,xz,lzma,bzip2,gzip,compress
-	longopts=$longopts,use-compressor:,use-compress-program:
-	longopts=$longopts,fast,best,use-encoder:,use-encode-program:
-	longopts=$longopts,arch:,dir:,stow-dir:,target:,group:,spool-dir:
+	longopts=$longopts,use-compressor:,use-compress-program:,fast,best
+	longopts=$longopts,use-encoder:,use-encode-program:,arch:,dir:
+	longopts=$longopts,stow-dir:,target:,group:,spool-dir:,out-dir:
 	;;
     *)	echo "$command: Missing getopt(1)!" >&2
 	exit 1
@@ -892,6 +907,8 @@ while shift; do				## Process parsed options…
 			shift; stowdir=$1 target=`dirname "$1"`	;;
 	-t|--target)	shift; target=$1	;;
 	-g|--group)	shift; group=$1		;;
+	-s|--spool-dir)	shift; spooldir=$1	;;
+	-o|--out-dir)	shift; outdir=$1	;;
 	--)		shift; break		;;
     esac
 done

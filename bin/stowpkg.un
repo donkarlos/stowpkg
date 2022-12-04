@@ -158,7 +158,7 @@ stowpkg_user_in_group() {
 ##	• encoder	(W) Elected encoder's absolute pathname
 ##----------------------------------------------------------------------------
 stowpkg_decode() {
-    case ${encoder:=unknown}${1+:$1} in
+    case ${encoder:=invalid}${1+:$1} in
 	*/base64:supported)
 	    return 0
 	    ;;
@@ -414,7 +414,7 @@ stowpkg_deflate() {
 ##	• encoder	(W) Elected encoder's absolute pathname
 ##----------------------------------------------------------------------------
 stowpkg_encode() {
-    case ${encoder:=unknown}${1+:$1} in
+    case ${encoder:=invalid}${1+:$1} in
 	*/base64:supported)
 	    return 0
 	    ;;

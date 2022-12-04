@@ -650,16 +650,15 @@ stowpkg_list() {
 stowpkg_deploy() {
     local sx='1,/^'"$data_head"'$/d'
 
-    test -n "${stowdir-}" || {
-	echo "$command $action: No stow directory given!" >&2
-	return 1
-    }
-    test -d "$stowdir" || {
-	echo "$command $action: $stowdir: No such directory!" >&2
-	return 1
-    }
-
-    stowpkg_verify "${1:-$0}" && sed "$sx" "${1:-$0}" |
+    case ${stowdir:+=} in		## Stow directory given?
+	=)  test -d "$stowdir" || {	## Yes, does it exist?
+		echo "$command $action: »$stowdir« : No such directory!" >&2
+		return 1
+	    }
+	    ;;
+	*)  echo "$command $action: No stow directory given!" >&2; return 1
+	    ;;
+    esac; stowpkg_verify "${1:-$0}" && sed "$sx" "${1:-$0}" |
 	stowpkg_decode | stowpkg_inflate | (cd "$stowdir" && stowpkg_extract)
 }
 
@@ -677,17 +676,15 @@ stowpkg_deploy() {
 stowpkg_revoke() {
     local sx='1,/^'"$data_head"'$/d' ifs rn pn ECHO ds='$' nl='
 '
-
-    test -n "${stowdir-}" || {
-	echo "$command $action: No stow directory given!" >&2
-	return 1
-    }
-    test -d "$stowdir" || {
-	echo "$command $action: $stowdir: No such directory!" >&2
-	return 1
-    }
-
-    stowpkg_verify "${1:-$0}" && stowpkg_revocable "${1:-$0}" || return 1
+    case ${stowdir:+=} in		## Stow directory given?
+	=)  test -d "$stowdir" || {	## Yes, does it exist?
+		echo "$command $action: »$stowdir« : No such directory!" >&2
+		return 1
+	    }
+	    ;;
+	*)  echo "$command $action: No stow directory given!" >&2; return 1
+	    ;;
+    esac; stowpkg_verify "${1:-$0}" && stowpkg_revocable "${1:-$0}" || return 1
 					## Give up unless STOWABLE passes ver-
 					## ification and revocability check.
     case ${verbose-n} in

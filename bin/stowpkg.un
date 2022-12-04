@@ -41,6 +41,7 @@
 ##					Implement option »-V|--version«.
 ##					stowpkg_{archive,extract}(): Cope with
 ##					»v« being unset.
+##					Implement option »-g|--group=GROUP«.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -59,7 +60,7 @@ info_head='#-vvvv-INFO-vvvv-#'		## Define info and data section heads.
 data_head='#-vvvv-DATA-vvvv-#'
 readonly info_head data_head
 
-unset TRACE stowdir compression; verbose=n archiver=cpio compressor=xz
+unset TRACE verbose compression group; verbose=n archiver=cpio compressor=xz
 encoder=base64 target=@prefix@ hostarch=`uname -s`.`uname -m`
 arch=$hostarch; readonly hostarch	## Provide sane defaults.
 stowpkg_0tag=:0; readonly stowpkg_0tag	## Preset cleanup tag.
@@ -112,6 +113,34 @@ stowpkg_programs() {
     local status=0 program; for program in ${1+"$@"}; do
 	stowpkg_program "$program" || status=1
     done; return $status
+}
+
+##----------------------------------------------------------------------------
+##  stowpkg_user_in_group(USER GROUP)
+##				Ensure that USER is member of GROUP
+##
+##  Non-local variables:
+##	• command	(R) ~~~~
+##	• action	(R) ~~~~
+##----------------------------------------------------------------------------
+stowpkg_user_in_group() {
+    local groups; case ${2:+=}${3+3} in	## Usage OK?
+	=)  groups=`(id "$1") 2>/dev/null | sed '
+		s/^.* groups=/,/;s/,[[:digit:]]*(\([^()]*\))/,\1/g;s/^,//
+	    '`; test -n "$groups" || {	## Yes, and USER exists?
+		echo "$command $action: »${1:-(none)}«: No such user!" >&2
+		return 1		## No, complain and indicate failure!
+	    }; case ,$groups, in	## USER in GROUP?
+		*,$2,*)			## Yes.
+		    ;;
+		*)  echo "$command $action: »${1:-(none)}«: user not in group »$2«!" >&2
+		    return 1		## No, complain and indicate failure!
+		    ;;
+	    esac
+	    ;;
+	*)  return 2			## No, indicate abuse!
+	    ;;
+    esac
 }
 
 ##----------------------------------------------------------------------------
@@ -237,6 +266,7 @@ stowpkg_verify() {
 	/^encoder=/bp
 	/^arch=/bp
 	/^target=/bp
+	/^group=/bp
 	d;:p
     ' "${1:--}"`" || {			## sed(1) succeeded in extracting the
 					## INFO section?
@@ -435,8 +465,11 @@ stowpkg_getvars() {
 ##	• archiver	(W) Elected archiver's absolute pathname
 ##	• compressor	(W) Elected compressor's absolute pathname
 ##	• encoder	(W) Elected encoder's absolute pathname
+##	• group		(R) Deploy group
 ##----------------------------------------------------------------------------
 stowpkg_build() {
+    local t n v sx
+
     case $arch in
 	$hostarch|all)
 	    ;;
@@ -505,19 +538,53 @@ stowpkg_build() {
     (cd "$builddir" && make DESTDIR="$destdir" prefix="/$spsn" install) || {
 	echo "$command $action: Couldn${SQ}t install $spsn!" >&2
 	return 1
-    }
+    }; case ${group:+=} in
+	=)  echo "$command $action: Make installation »$group«-deployable…"
+	    case $- in *x*) t=t;; esac
+	    if stowpkg_user_in_group "`whoami`" "$group"; then
+		find "$destdir/$spsn" -type d -print0 |
+		    xargs -0r${t-} chgrp "$group"			&&
+		find "$destdir/$spsn" -type d -print0 |
+		    xargs -0r${t-} chmod g+rwxs				&&
+		find "$destdir/$spsn" -type l -print0 |
+		    xargs -0r${t-} chgrp -h "$group"			&&
+		find "$destdir/$spsn" ! -type d ! -type l -print0 |
+		    xargs -0r${t-} chgrp "$group"			&&
+		find "$destdir/$spsn" ! -type d ! -type l -perm -a+x -print0 |
+		    xargs -0r${t-} chmod g+wx				&&
+		find "$destdir/$spsn" ! -type d ! -type l ! -perm -a+x -print0 |
+		    xargs -0r${t-} chmod g+w
+	    else
+		echo "$command $action: …skipped." >&2
+	    fi
+	    ;;
+    esac
 
     echo "$command $action: Assemble $spbn…"
     undo_push 'rm -f' "$spbn"
+    for n in encoder compressor compression archiver arch target group; do
+					## For each info section variable do…
+	eval 'case ${'"$n"':+=} in	## Variable is set and non-empty?
+	    =)	case $n in		## Yes, which is it?
+		    encoder|compressor|archiver)
+					## Elected encoder/compressor/archiver…
+			v=`quote_sh "${'"$n"'##*/}"`	;;
+					## sh(1)-quote its basename.
+		    arch|target|group)	## It must be sh(1)-quoted?
+			v=`quote_sh "$'"$n"'"`		;;
+					## Yes, do so.
+		    *)	v=$'"$n"'			;;
+					## No, supply it literally.
+		esac; sx="${sx:+$sx$BS$NL}$n=$v"
+		;;			## Augment sed(1) append statement.
+	esac'
+    done
     (cd "$destdir" && find "$spsn" | sort -u | stowpkg_archive) |
 	stowpkg_deflate | stowpkg_encode | sed '
-/Build and m/s//M/;/^'"$snip_head"'$/,/^'"$snip_tail"'$/d;/^'"$info_head"'$/a\
-encoder='"`   quote_sh "${encoder##*/}"   `"'\
-compressor='"`quote_sh "${compressor##*/}"`"'\
-archiver='"`  quote_sh "${archiver##*/}"  `"'\
-arch='"`      quote_sh "$arch"	  	  `"'\
-target='"`    quote_sh "$target"	  `"'\
-'"$data_head$NL" "$0" - >$spbn	&& test -s "$spbn" && chmod +x "$spbn"
+/Build and m/s//M/;/^'"$snip_head"'$/,/^'"$snip_tail"'$/d
+/^'"$info_head"'$/a\
+'"${sx:+$sx$BS$NL}$data_head$NL" "$0" - >$spbn				&&
+    test -s "$spbn" && chmod +x${group:+,g+w} "$spbn"
 }
 
 #-^^^^--8><-^^^^-#
@@ -654,13 +721,15 @@ Usage: $command [OPTION …] $* [PACKAGE [VERSION]]
 	Build stowable package.
 
 Valid options are:
- -a, --arch=ARCH	Build for ARCHitecture (default: $hostarch)
- -t, --target=TARGET	Build for TARGET directory (default: $target)
  -v, --verbose		Be verbose
+ -a, --arch=ARCH	Build for ARCHitecture (»$hostarch«)
+ -d, --dir, --stow-dir=STOWDIR
+			Build for deployment in STOW DIRectory (»$stowdir«)
+ -t, --target=TARGET	Build for deployment in TARGET directory (»$target«)
      --cpio		Build archive with cpio(1)
      --tar		Build archive with tar(1)
  -A, --use-archiver, --use-archive-program=ARCHIVER
-			Build archive with ARCHIVER (default: $archiver)
+			Build archive with ARCHIVER (»$archiver«)
      --lzip		Compress with lzip(1)
      --lzop		Compress with lzop(1)
  -J, --xz		Compress with xz(1)
@@ -669,10 +738,11 @@ Valid options are:
  -z, --gzip		Compress with gzip(1)
  -Z, --compress		Compress with compress(1)
  -I, --use-compressor, --use-compress-program=COMPRESSOR
-			Compress with COMPRESSOR (default: $compressor)
- -#, --fast, --best	Set compression level
+			(Un-)Compress with COMPRESSOR (»$compressor«)
+ -#, --fast, --best	Specify compression level (${compression+»-$compression«, }# is a digit!)
  -E, --use-encoder, --use-encode-program=ENCODER
-			Encode with ENCODER (default: $encoder)
+			Encode with ENCODER (»$encoder«)
+ -g, --group=GROUP	Make stowable package deployable by GROUP member
 EOF
 	    ;;
 #-^^^^--8><-^^^^-#
@@ -748,12 +818,12 @@ EOF
 (getopt -T) >/dev/null 2>&1 && {
     echo "$command: Legacy getopt(1) found!" >&2; exit 1
 } || case $? in
-    4)	optstring=hVvA:JjzZI:123456789E:a:d:t:
+    4)	optstring=hVvA:JjzZI:123456789E:a:d:t:g:
 	longopts=trace,help,version,verbose,use-archiver:,use-archive-program:
 	longopts=$longopts,cpio,tar,lzip,lzop,xz,lzma,bzip2,gzip,compress
 	longopts=$longopts,use-compressor:,use-compress-program:
 	longopts=$longopts,fast,best,use-encoder:,use-encode-program:
-	longopts=$longopts,arch:,dir:,stow-dir:,target:
+	longopts=$longopts,arch:,dir:,stow-dir:,target:,group:
 	;;
     *)	echo "$command: Missing getopt(1)!" >&2
 	exit 1
@@ -794,6 +864,7 @@ while shift; do				## Process parsed options…
 	-d|--dir|--stow-dir)
 			shift; stowdir=$1	;;
 	-t|--target)	shift; target=$1	;;
+	-g|--group)	shift; group=$1		;;
 	--)		shift; break		;;
     esac
 done

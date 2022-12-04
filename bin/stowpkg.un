@@ -300,12 +300,12 @@ stowpkg_verify() {
 	    ;;
     esac
 
-    stowpkg_program "$archiver" archiver &&
-	stowpkg_program "$compressor" compressor &&
-	stowpkg_program "$encoder" encoder &&
-	stowpkg_extract supported &&	## Ensure that elected archiver,
-	stowpkg_inflate supported &&	## compressor, and encoder are present
-	stowpkg_decode supported	## and supported.
+    stowpkg_program "$archiver"   archiver && stowpkg_extract supported	&&
+    stowpkg_program "$compressor" compressor && stowpkg_inflate supported &&
+    stowpkg_program "$encoder"    encoder && stowpkg_decode supported
+					## Ensure that elected archiver,
+					## compressor, and encoder are present
+					## and supported.
 }
 
 ##----------------------------------------------------------------------------
@@ -491,13 +491,10 @@ stowpkg_build() {
     esac
 
     stowpkg_programs mktemp sed make					&&
-    stowpkg_program "$archiver" archiver				&&
-    stowpkg_program "$compressor" compressor				&&
-    stowpkg_program "$encoder" encoder					&&
-    stowpkg_archive supported						&&
-    stowpkg_deflate supported						&&
-    stowpkg_encode supported || return $?
-					## Ensure that requisite programs,
+    stowpkg_program "$archiver"   archiver && stowpkg_archive supported	&&
+    stowpkg_program "$compressor" compressor && stowpkg_deflate supported &&
+    stowpkg_program "$encoder"    encoder && stowpkg_encode supported	||
+	return $?			## Ensure that requisite programs,
 					## elected archiver, compressor, and
 					## encoder are present and supported.
     case ${spooldir:+=$spooldir} in	## Spool directory specified?

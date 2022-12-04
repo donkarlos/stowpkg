@@ -1,7 +1,7 @@
 #! /bin/sh -e
 #-----------------------------------------------------------------------------
-#   stowpkg			- Build and manage self-deploying
-#				  stowable packages
+#   stowpkg			- Build and manage self-deploying stowable
+#				  packages
 #
 #   Copyright © 2020-2022 Das Computerlabor (DCl-M)
 #
@@ -44,6 +44,7 @@
 ##					Implement option »-g|--group=GROUP«.
 ##					Make target/stow dir. handling stow(1)-
 ##					compatible.
+##		ks	2022-12-04	Implement option »-s|--spool-dir=DIR«.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -62,8 +63,8 @@ info_head='#-vvvv-INFO-vvvv-#'		## Define info and data section heads.
 data_head='#-vvvv-DATA-vvvv-#'
 readonly info_head data_head
 
-unset TRACE verbose target compression group; stowdir=. archiver=cpio
-compressor=xz encoder=base64 hostarch=`uname -s`.`uname -m`
+unset TRACE verbose target compression group spooldir; stowdir=.
+archiver=cpio compressor=xz encoder=base64 hostarch=`uname -s`.`uname -m`
 arch=$hostarch; readonly hostarch	## Provide sane defaults.
 stowpkg_0tag=:0; readonly stowpkg_0tag	## Preset cleanup tag.
 
@@ -475,6 +476,7 @@ stowpkg_getvars() {
 ##	• hostarch	(R) Architecture stowpkg(1) is invoked on
 ##	• arch		(R) Architecture stowable should be built for
 ##	• target	(R) Target directory stowable package is built for
+##	• spooldir	(R) Spool directory
 ##	• archiver	(W) Elected archiver's absolute pathname
 ##	• compressor	(W) Elected compressor's absolute pathname
 ##	• encoder	(W) Elected encoder's absolute pathname
@@ -501,6 +503,17 @@ stowpkg_build() {
 					## Ensure that requisite programs,
 					## elected archiver, compressor, and
 					## encoder are present and supported.
+    case ${spooldir:+=$spooldir} in	## Spool directory specified?
+	=/*)				## Yes, as absolute pathname…
+	    test -d "$spooldir" && test -w "$spooldir" || {
+		echo "$command $action: »$spooldir«: No such writable directory!" >&2
+		return 1
+	    }
+	    ;;
+	=*) echo "$command $action: »$spooldir«: Not an absolute pathname!" >&2
+	    return 1
+	    ;;
+    esac
 
     test -f configure && test -x configure || {
 	echo "$command $action: No configure script found!" >&2
@@ -572,11 +585,13 @@ stowpkg_build() {
 	    fi
 	    ;;
     esac
-
-    echo "$command $action: Assemble $spbn…"
-    undo_push 'rm -f' "$spbn"
+    echo "$command $action: Assemble ${spooldir-.}/$spbn…"
+    rm -f "${spooldir-.}/$spbn"		## Remove stowable spooled earlier.
+    undo_push 'rm -f' "${spooldir-.}/$spbn"
+					## Arrange to remove spooled stowable
+					## on failure.
     for n in encoder compressor compression archiver arch target group; do
-					## For each info section variable do…
+					## For each INFO section variable do…
 	eval 'case ${'"$n"':+=} in	## Variable is set and non-empty?
 	    =)	case $n in		## Yes, which is it?
 		    encoder|compressor|archiver)
@@ -591,13 +606,13 @@ stowpkg_build() {
 		esac; sx="${sx:+$sx$BS$NL}$n=$v"
 		;;			## Augment sed(1) append statement.
 	esac'
-    done
-    (cd "$destdir" && find "$spsn" | sort -u | stowpkg_archive) |
+    done; (cd "$destdir" && find "$spsn" | sort -u | stowpkg_archive) |
 	stowpkg_deflate | stowpkg_encode | sed '
 /Build and m/s//M/;/^'"$snip_head"'$/,/^'"$snip_tail"'$/d
 /^'"$info_head"'$/a\
-'"${sx:+$sx$BS$NL}$data_head$NL" "$0" - >$spbn				&&
-    test -s "$spbn" && chmod +x${group:+,g+w} "$spbn"
+'"${sx:+$sx$BS$NL}$data_head$NL" "$0" - >${spooldir-.}/$spbn		&&
+    test -s "${spooldir-.}/$spbn"					&&
+    chmod +x${group:+,g+w} "${spooldir-.}/$spbn"
 }
 
 #-^^^^--8><-^^^^-#
@@ -743,6 +758,8 @@ Valid options are:
  -d, --dir, --stow-dir=STOWDIR
 			Build for deployment in STOW DIRectory (»$stowdir«)
  -t, --target=TARGET	Build for deployment in TARGET directory (»${target:-(unset)}«)
+ -s, --spool-dir=SPOOLDIR
+			Spool built stowable package to SPOOLDIR (»${spooldir-.}«)
      --cpio		Build archive with cpio(1)
      --tar		Build archive with tar(1)
  -A, --use-archiver, --use-archive-program=ARCHIVER
@@ -838,12 +855,12 @@ EOF
 (getopt -T) >/dev/null 2>&1 && {
     echo "$command: Legacy getopt(1) found!" >&2; exit 1
 } || case $? in
-    4)	optstring=hVvA:JjzZI:123456789E:a:d:t:g:
+    4)	optstring=hVvA:JjzZI:123456789E:a:d:t:g:s:
 	longopts=trace,help,version,verbose,use-archiver:,use-archive-program:
 	longopts=$longopts,cpio,tar,lzip,lzop,xz,lzma,bzip2,gzip,compress
 	longopts=$longopts,use-compressor:,use-compress-program:
 	longopts=$longopts,fast,best,use-encoder:,use-encode-program:
-	longopts=$longopts,arch:,dir:,stow-dir:,target:,group:
+	longopts=$longopts,arch:,dir:,stow-dir:,target:,group:,spool-dir:
 	;;
     *)	echo "$command: Missing getopt(1)!" >&2
 	exit 1

@@ -218,9 +218,7 @@ stowpkg_inflate() {
 ##----------------------------------------------------------------------------
 stowpkg_extract() {
     local v
-    case ${verbose:-n} in
-	y)  v=v	;;
-    esac; case ${archiver:=unknown}${1+:$1} in
+    case ${verbose:-n} in y) v=v;; esac; case ${archiver:=invalid}${1+:$1} in
 	*/cpio:supported|*/tar:supported)
 	    return 0
 	    ;;
@@ -351,9 +349,7 @@ stowpkg_revocable() {
 ##----------------------------------------------------------------------------
 stowpkg_archive() {
     local v
-    case ${verbose:-n} in
-	y)  v=v	;;
-    esac; case ${archiver:=unknown}${1+:$1} in
+    case ${verbose:-n} in y) v=v;; esac; case ${archiver:=invalid}${1+:$1} in
 	*/cpio:supported|*/tar:supported)
 	    return 0
 	    ;;

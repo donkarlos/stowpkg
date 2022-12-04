@@ -131,12 +131,12 @@ stowpkg_user_in_group() {
 	=)  groups=`(id "$1") 2>/dev/null | sed '
 		s/^.* groups=/,/;s/,[[:digit:]]*(\([^()]*\))/,\1/g;s/^,//
 	    '`; test -n "$groups" || {	## Yes, and USER exists?
-		echo "$command $action: »${1:-(none)}«: No such user!" >&2
+		echo "$command $action: »${1:-(empty)}«: No such user!" >&2
 		return 1		## No, complain and indicate failure!
 	    }; case ,$groups, in	## USER in GROUP?
 		*,$2,*)			## Yes.
 		    ;;
-		*)  echo "$command $action: »${1:-(none)}«: user not in group »$2«!" >&2
+		*)  echo "$command $action: »${1:-(empty)}«: user not in group »$2«!" >&2
 		    return 1		## No, complain and indicate failure!
 		    ;;
 	    esac

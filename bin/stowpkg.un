@@ -673,7 +673,7 @@ stowpkg_deploy() {
 ##	• data_head	(R) DATA section head
 ##----------------------------------------------------------------------------
 stowpkg_revoke() {
-    local sx='1,/^'"$data_head"'$/d' ifs rn pn ECHO ds='$' nl='
+    local sx='1,/^'"$data_head"'$/d' ifs rn pn ECHO=: ds=\$ nl='
 '
     case ${stowdir:+=} in		## Stow directory given?
 	=)  test -d "$stowdir" || {	## Yes, does it exist?
@@ -686,10 +686,7 @@ stowpkg_revoke() {
     esac; stowpkg_verify "${1:-$0}" && stowpkg_revocable "${1:-$0}" || return 1
 					## Give up unless STOWABLE passes ver-
 					## ification and revocability check.
-    case ${verbose-n} in
-	y)  ECHO=echo	;;
-	*)  ECHO=:	;;
-    esac
+    case ${verbose-n} in y) ECHO=echo;; esac
 
     ifs=$IFS; ifs=$nl; set shiftee `
 	sed "$sx" "${1:-$0}" | stowpkg_decode | stowpkg_inflate |

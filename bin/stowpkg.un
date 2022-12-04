@@ -261,14 +261,15 @@ stowpkg_extract() {
 stowpkg_verify() {
     stowpkg_programs sed || return $?	## Bail out unless sed(1) is present.
 
-    local status=0 info sq=${SQ-\'};	## Assume success.
-    unset archiver compressor encoder arch target
+    local status=0 info			## Assume success.
+    unset archiver compressor compression encoder arch target group
 					## Forget archiver/compressor/encoder/
-					## arch/target presets.
+					## arch/target/group presets.
     eval "`sed '
 	1,/^'"$info_head"'$/d;/^'"$data_head"'$/,$d
 	/^archiver=/bp
 	/^compressor=/bp
+	/^compression=/bp
 	/^encoder=/bp
 	/^arch=/bp
 	/^target=/bp
@@ -293,8 +294,8 @@ stowpkg_verify() {
     case $suffix:$arch in		## STOWABLE suitable for ACTION?
 	_info:*|_list:*|_revoke:*|*:$hostarch|*:all)
 	    ;;
-	*)  echo "$command $action: ${1:--}: Can${sq}t $action"		\
-		 "stowable package built for $arch on $hostarch!" >&2
+	*)  echo "$command $action: ${1:--}: Can't $action stowable"	\
+		 "package built for $arch on $hostarch!" >&2
 	    return 1			## No, complain and indicate failure!
 	    ;;
     esac

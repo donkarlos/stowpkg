@@ -895,7 +895,7 @@ while shift; do				## Process parsed options…
 	--)		shift; break		;;
     esac
 done
-${TRACE+$TRACE}
+${TRACE-}				## Conditionally trace execution.
 case $#:$command in
     0:?*.stow)
 	exec "$0" deploy

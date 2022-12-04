@@ -85,7 +85,8 @@ stowpkg_atload() {
 ##				Ensure that PROGRAM (in CATEGORY) is present
 ##
 ##  Non-local variables:
-##	• action	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
 ##	• &CATEGORY	(W) CATEGORY PROGRAM's absolute pathname
 ##----------------------------------------------------------------------------
 stowpkg_program() {
@@ -108,8 +109,7 @@ stowpkg_program() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_programs(PROGRAM …)
-##				Ensure that all PROGRAMs are present
+##  stowpkg_programs(PROGRAM …)	Ensure that all PROGRAMs are present
 ##----------------------------------------------------------------------------
 stowpkg_programs() {
     local status=0 program; for program in ${1+"$@"}; do
@@ -122,8 +122,8 @@ stowpkg_programs() {
 ##				Ensure that USER is member of GROUP
 ##
 ##  Non-local variables:
-##	• command	(R) ~~~~
-##	• action	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
 ##----------------------------------------------------------------------------
 stowpkg_user_in_group() {
     local groups; case ${2:+=}${3+3} in	## Usage OK?
@@ -152,7 +152,8 @@ stowpkg_user_in_group() {
 ##				• decode datastream from stdin to stdout
 ##
 ##  Non-local variables:
-##	• action	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
 ##	• encoder	(W) Elected encoder's absolute pathname
 ##----------------------------------------------------------------------------
 stowpkg_decode() {
@@ -179,7 +180,8 @@ stowpkg_decode() {
 ##				• inflate datastream from stdin to stdout
 ##
 ##  Non-local variables:
-##	• action	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
 ##	• compressor	(W) Elected compressor's absolute pathname
 ##----------------------------------------------------------------------------
 stowpkg_inflate() {
@@ -208,7 +210,8 @@ stowpkg_inflate() {
 ##				  stow directory
 ##
 ##  Non-local variables:
-##	• action	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
 ##	• archiver	(W) Elected archiver's absolute pathname
 ##	• verbose	(R) Specifies if extraction should be verbose
 ##----------------------------------------------------------------------------
@@ -242,12 +245,14 @@ stowpkg_extract() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_verify(STOWABLE)	Ensure that STOWABLE package is deployable
+##  stowpkg_verify([STOWABLE=-]) Ensure that STOWABLE package is deployable
 ##
 ##  Non-local variables:
-##	• info_head	(R) ~~~~
-##	• data_head	(R) ~~~~
-##	• action	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
+##	• info_head	(R) INFO section head
+##	• data_head	(R) DATA section head
+##	• hostarch	(R) Architecture stowpkg(1) is invoked on
 ##	• arch		(W) Architecture STOWABLE was built for
 ##	• target	(W) Target directory STOWABLE was built for
 ##	• archiver	(W) Elected archiver's absolute pathname
@@ -304,10 +309,12 @@ stowpkg_verify() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_revocable(STOWABLE)	Ensure that STOWABLE package is revocable
+##  stowpkg_revocable([STOWABLE=-])
+##				Ensure that STOWABLE package is revocable
 ##
 ##  Non-local variables:
-##	• action	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
 ##	• arch		(R) Architecture STOWABLE was built for
 ##	• stowdir	(R) Stow directory STOWABLE had been deployed in
 ##	• target	(R) Target directory STOWABLE was built for
@@ -336,7 +343,8 @@ stowpkg_revocable() {
 ##				• archive pathnames fed by stdin to stdout
 ##
 ##  Non-local variables:
-##	• action	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
 ##	• archiver	(W) Elected archiver's absolute pathname
 ##	• verbose	(R) Specifies if archival should be verbose
 ##----------------------------------------------------------------------------
@@ -370,7 +378,8 @@ stowpkg_archive() {
 ##				• deflate datastream from stdin to stdout
 ##
 ##  Non-local variables:
-##	• action	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
 ##	• compressor	(W) Elected compressor's absolute pathname
 ##	• compression	(R) Elected compression level
 ##----------------------------------------------------------------------------
@@ -399,7 +408,8 @@ stowpkg_deflate() {
 ##				• encode datastream from stdin to stdout
 ##
 ##  Non-local variables:
-##	• action	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
 ##	• encoder	(W) Elected encoder's absolute pathname
 ##----------------------------------------------------------------------------
 stowpkg_encode() {
@@ -456,13 +466,14 @@ stowpkg_getvars() {
 ##				Build stowable package
 ##
 ##  Non-local variables:
-##	• snip_head	(R) ~~~~
-##	• snip_tail	(R) ~~~~
-##	• info_head	(R) ~~~~
-##	• data_head	(R) ~~~~
-##	• hostarch	(R) ~~~~
-##	• action	(R) ~~~~
-##	• arch		(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
+##	• snip_head	(R) Snip head
+##	• snip_tail	(R) Snip tail
+##	• info_head	(R) INFO section head
+##	• data_head	(R) DATA section head
+##	• hostarch	(R) Architecture stowpkg(1) is invoked on
+##	• arch		(R) Architecture stowable should be built for
 ##	• target	(R) Target directory stowable package is built for
 ##	• archiver	(W) Elected archiver's absolute pathname
 ##	• compressor	(W) Elected compressor's absolute pathname
@@ -591,11 +602,11 @@ stowpkg_build() {
 
 #-^^^^--8><-^^^^-#
 ##----------------------------------------------------------------------------
-##  stowpkg_info([STOWABLE])	(Self-)show stowable package information
+##  stowpkg_info([STOWABLE=$0])	(Self-)show stowable package information
 ##
 ##  Non-local variables:
-##	• info_head	(R) ~~~~
-##	• data_head	(R) ~~~~
+##	• info_head	(R) INFO section head
+##	• data_head	(R) DATA section head
 ##----------------------------------------------------------------------------
 stowpkg_info() {
     local sx='1,/^'"$info_head"'$/d;/^'"$data_head"'$/,$d'
@@ -605,10 +616,10 @@ stowpkg_info() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_list([STOWABLE])	(Self-)list stowable package contents
+##  stowpkg_list([STOWABLE=$0])	(Self-)list stowable package contents
 ##
 ##  Non-local variables:
-##	• data_head	(R) ~~~~
+##	• data_head	(R) DATA section head
 ##----------------------------------------------------------------------------
 stowpkg_list() {
     local sx='1,/^'"$data_head"'$/d'
@@ -618,12 +629,14 @@ stowpkg_list() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_deploy([STOWABLE])	(Self-)deploy STOWABLE into stow directory
+##  stowpkg_deploy([STOWABLE=$0])
+##				(Self-)deploy STOWABLE into stow directory
 ##
 ##  Non-local variables:
-##	• data_head	(R) ~~~~
-##	• action	(R) ~~~~
-##	• stowdir	(R) Stow directory STOWABLE will be deployed into
+##	• command	(R) Command name
+##	• action	(R) Specified action
+##	• stowdir	(R) Stow directory STOWABLE will be deployed to
+##	• data_head	(R) DATA section head
 ##----------------------------------------------------------------------------
 stowpkg_deploy() {
     local sx='1,/^'"$data_head"'$/d'
@@ -642,13 +655,15 @@ stowpkg_deploy() {
 }
 
 ##----------------------------------------------------------------------------
-##  stowpkg_revoke([STOWABLE])	(Self-)revoke STOWABLE from stow directory
+##  stowpkg_revoke([STOWABLE=$0])
+##				(Self-)revoke STOWABLE from stow directory
 ##
 ##  Non-local variables:
-##	• data_head	(R) ~~~~
-##	• action	(R) ~~~~
-##	• stowdir	(R) ~~~~
-##	• verbose	(R) ~~~~
+##	• command	(R) Command name
+##	• action	(R) Specified action
+##	• stowdir	(R) Stow directory STOWABLE had been deployed in
+##	• verbose	(R) Be verbose?
+##	• data_head	(R) DATA section head
 ##----------------------------------------------------------------------------
 stowpkg_revoke() {
     local sx='1,/^'"$data_head"'$/d' ifs rn pn ECHO ds='$' nl='
@@ -692,8 +707,8 @@ stowpkg_revoke() {
 ##  stowpkg_help([ACTION])	Show help (for ACTION)
 ##
 ##  Non-local variables:
-##	• suffixes	(R) ~~~~
-##	• command	(R) ~~~~
+##	• suffixes	(R) »:«-separated list of action suffixes
+##	• command	(R) Command name
 ##	• hostarch	(R) Host architecture
 ##	• target	(R) Default target directory
 ##	• archiver	(R) Default archiver
@@ -800,6 +815,9 @@ EOF
 #-vvvv--8><-vvvv-#
 ##----------------------------------------------------------------------------
 ##  stowpkg_version()		Show version and license information
+##
+##  Non-local variables:
+##	• command	(R) Command name
 ##----------------------------------------------------------------------------
 stowpkg_version() {
     cat <<EOF

@@ -186,7 +186,7 @@ stowpkg_decode() {
 ##	• compressor	(W) Elected compressor's absolute pathname
 ##----------------------------------------------------------------------------
 stowpkg_inflate() {
-    case ${compressor:=unknown}${1+:$1} in
+    case ${compressor:=invalid}${1+:$1} in
 	*/lz[io]p:supported|*/xz:supported|*/lzma:supported|		\
 	*/bzip2:supported|*/gzip:supported|*/compress:supported)
 	    return 0
@@ -385,7 +385,7 @@ stowpkg_archive() {
 ##	• compression	(R) Elected compression level
 ##----------------------------------------------------------------------------
 stowpkg_deflate() {
-    case ${compressor:=unknown}${1+:$1} in
+    case ${compressor:=invalid}${1+:$1} in
 	*/lz[io]p:supported|*/xz:supported|*/lzma:supported|		\
 	*/bzip2:supported|*/gzip:supported|*/compress:supported)
 	    return 0

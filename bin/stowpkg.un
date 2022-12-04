@@ -44,7 +44,9 @@
 ##					Implement option »-g|--group=GROUP«.
 ##					Make target/stow dir. handling stow(1)-
 ##					compatible.
-##		ks	2022-12-04	Implement option »-s|--spool-dir=DIR«.
+##		ks	2022-12-04	Fix options »-h|--help« and »-V|--ver-
+##					sion«.
+##					Implement option »-s|--spool-dir=DIR«.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -865,8 +867,8 @@ eval set shiftee "$args"; unset optstring longopts args
 while shift; do				## Process parsed options…
     case $1 in
 	--trace)	TRACE='set -x'		;;
-	-h|--help)	stowpkg_help;	 exit 0	;;
-	-V|--version)	stowpkg_version; exit 0	;;
+	-h|--help)	set shiftee -- help	;;
+	-V|--version)	set shiftee -- version	;;
 	-v|--verbose)	verbose=y		;;
 	   --cpio|--tar)
 			archiver=${1#--}	;;
@@ -903,7 +905,6 @@ case $#:$command in
 	;;
 #-vvvv--8><-vvvv-#
     *)
-	eval "`libdl-sh load`" && dl_atload stowpkg_atload
 	suffixes=_help:_version:_build:_info:_list:_deploy:_revoke
 	;;
 #-^^^^--8><-^^^^-#
@@ -922,6 +923,13 @@ done
 case :$suffixes: in			## Extended suffix recognized?
     *:${suffix}:*)			## Yes, derive…
 	action=`echo "$suffix" | sed 's/^_//;y/_/ /'`
+#-vvvv--8><-vvvv-#
+	case $action in
+	    build)
+		eval "`libdl-sh load`" && dl_atload stowpkg_atload || exit $?
+		;;
+	esac
+#-^^^^--8><-^^^^-#
 	stowpkg$suffix ${1+"$@"}	## …and perform action
 	;;
     *)	stowpkg_help >&2; exit 2	## No, show general help and

@@ -42,6 +42,8 @@
 ##					stowpkg_{archive,extract}(): Cope with
 ##					»v« being unset.
 ##					Implement option »-g|--group=GROUP«.
+##					Make target/stow dir. handling stow(1)-
+##					compatible.
 ##----------------------------------------------------------------------------
 ##  Initialization:
 #-----------------------------------------------------------------------------
@@ -60,8 +62,8 @@ info_head='#-vvvv-INFO-vvvv-#'		## Define info and data section heads.
 data_head='#-vvvv-DATA-vvvv-#'
 readonly info_head data_head
 
-unset TRACE verbose compression group; verbose=n archiver=cpio compressor=xz
-encoder=base64 target=@prefix@ hostarch=`uname -s`.`uname -m`
+unset TRACE verbose target compression group; stowdir=. archiver=cpio
+compressor=xz encoder=base64 hostarch=`uname -s`.`uname -m`
 arch=$hostarch; readonly hostarch	## Provide sane defaults.
 stowpkg_0tag=:0; readonly stowpkg_0tag	## Preset cleanup tag.
 
@@ -725,7 +727,7 @@ Valid options are:
  -a, --arch=ARCH	Build for ARCHitecture (»$hostarch«)
  -d, --dir, --stow-dir=STOWDIR
 			Build for deployment in STOW DIRectory (»$stowdir«)
- -t, --target=TARGET	Build for deployment in TARGET directory (»$target«)
+ -t, --target=TARGET	Build for deployment in TARGET directory (»${target:-(unset)}«)
      --cpio		Build archive with cpio(1)
      --tar		Build archive with tar(1)
  -A, --use-archiver, --use-archive-program=ARCHIVER
@@ -830,7 +832,8 @@ EOF
 	;;
 esac
 eval set shiftee `
-    cat .stowrc "$HOME"/.stowrc 2>/dev/null || :
+    sed 'y/	/ /;s/   */ /g;s/^ //;s/ $//;/^$/d;/^#/d;s/ #.*$//'	\
+	.stowrc "$HOME"/.stowrc 2>/dev/null || :
 ` ${1+"$@"}; shift			## Prepend options from stow(1) re-
 					## source files to pos. paramaters.
 args=`getopt -n"$command" -o"$optstring" -l"$longopts" -- ${1+"$@"}` || {
@@ -862,7 +865,7 @@ while shift; do				## Process parsed options…
 			shift; encoder=$1	;;
 	-a|--arch)	shift; arch=$1		;;
 	-d|--dir|--stow-dir)
-			shift; stowdir=$1	;;
+			shift; stowdir=$1 target=`dirname "$1"`	;;
 	-t|--target)	shift; target=$1	;;
 	-g|--group)	shift; group=$1		;;
 	--)		shift; break		;;

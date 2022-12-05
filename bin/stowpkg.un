@@ -738,7 +738,7 @@ stowpkg_help() {
     local suffix=`echo "${1+_$*}" | sed 'y/ /_/'`
 
     case :$suffixes: in
-	*:${suffix}:*)	;;
+	*:$suffix:*)	;;
 	*)  suffix=	;;
     esac; case $suffix in
 	_help)		cat <<EOF
@@ -818,7 +818,7 @@ Valid options are:
  -v, --verbose		Be verbose
 EOF
 	    ;;
-	*)		cat <<EOF
+	*)		sed '/^#/d' <<EOF
 Usage: $command [OPTION …] ACTION [ARGUMENT …]
 
 Possible actions are:`echo ":-:$suffixes" | sed 's/:-:/\n  •/g;y/_:/ ,/'`
@@ -826,7 +826,9 @@ Try »$command help ACTION« for details.
 
 Valid OPTIONs are:
  -h, --help		Show usage information
+#-vvvv--8><-vvvv-#
  -V, --version		Show version and copyright information
+#-^^^^--8><-^^^^-#
 
 EOF
 	    ;;
@@ -859,8 +861,19 @@ EOF
 (getopt -T) >/dev/null 2>&1 && {
     echo "$command: Legacy getopt(1) found!" >&2; exit 1
 } || case $? in
-    4)	optstring=hVvA:JjzZI:123456789E:a:d:t:g:s:o:
-	longopts=trace,help,version,verbose,use-archiver:,use-archive-program:
+    4)	case $0 in
+	    ?*.stow)
+		suffixes=_help:_info:_list:_deploy:_revoke
+		optstring=hvA:JjzZI:123456789E:a:d:t:g:s:o:
+		longopts=trace,help,verbose,use-archiver:,use-archive-program:
+		;;
+	    *)
+		suffixes=_help:_version:_build:_info:_list:_deploy:_revoke
+		optstring=hVvA:JjzZI:123456789E:a:d:t:g:s:o:
+		longopts=trace,help,version,verbose,use-archiver:
+		longopts=$longopts,use-archive-program:
+		;;
+	esac
 	longopts=$longopts,cpio,tar,lzip,lzop,xz,lzma,bzip2,gzip,compress
 	longopts=$longopts,use-compressor:,use-compress-program:,fast,best
 	longopts=$longopts,use-encoder:,use-encode-program:,arch:,dir:
@@ -914,21 +927,7 @@ while shift; do				## Process parsed options…
 done
 ${TRACE-}				## Conditionally trace execution.
 case $#:$command in
-    0:?*.stow)
-	exec "$0" deploy
-	;;
-    *:?*.stow)
-	suffixes=_help:_info:_list:_deploy:_revoke
-	;;
-#-vvvv--8><-vvvv-#
-    *)
-	suffixes=_help:_version:_build:_info:_list:_deploy:_revoke
-	;;
-#-^^^^--8><-^^^^-#
-esac; case ${suffixes:+=} in
-    =)	;;
-    *)	echo "$command: Ran out of actions!" >&2
-	exit 2
+    0:?*.stow)	exec "$0" deploy;;
 esac; suffix=; while test $# -gt 0; do	## Extend suffix…
     suffix=${suffix}_$1; shift
     case :$suffixes: in
@@ -938,7 +937,7 @@ esac; suffix=; while test $# -gt 0; do	## Extend suffix…
 done
 
 case :$suffixes: in			## Extended suffix recognized?
-    *:${suffix}:*)			## Yes, derive…
+    *:$suffix:*)			## Yes, derive…
 	action=`echo "$suffix" | sed 's/^_//;y/_/ /'`
 #-vvvv--8><-vvvv-#
 	case $action in

@@ -24,6 +24,7 @@ dnl CHANGED BY:	ks	2020-05-05	Release 0.2.
 dnl			2021-04-18	UTF-8ize copyright notice.
 dnl			2021-04-20	Intermediate release 0.3~1.
 dnl			2022-12-01	UTF-8ize ellipses.
+dnl			2022-12-05	Intermediate release 0.3~2.
 dnl
 dnl NOTE:   (1)	Update the build system with autoreconf(1).
 dnl	    (2)	AM_INIT_AUTOMAKE() already invokes AC_ARG_PROGRAM, AC_PROG_-
@@ -33,7 +34,7 @@ dnl
 dnl Initialization:
 dnl
 AC_INIT([Build and manage self-deploying stowable packages],
-    [0.3~1], [ks+stowpkg@computerlabor.org], [stowpkg])
+    [0.3~2], [ks+stowpkg@computerlabor.org], [stowpkg])
 AC_PREREQ([2.61])
 AC_CONFIG_SRCDIR([bin/stowpkg.un])
 AC_CONFIG_AUX_DIR([auto])
